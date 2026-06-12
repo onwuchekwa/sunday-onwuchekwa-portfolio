@@ -34,7 +34,6 @@ const router = createRouter({
         { path: 'publications', name: 'admin-publications', component: () => import('@/views/admin/PublicationsManageView.vue') },
         { path: 'news', name: 'admin-news', component: () => import('@/views/admin/NewsManageView.vue') },
         { path: 'cv', name: 'admin-cv', component: () => import('@/views/admin/CvManageView.vue') },
-        { path: 'media', name: 'admin-media', component: () => import('@/views/admin/MediaView.vue') },
       ],
     },
   ],

@@ -12,7 +12,6 @@ const navItems = [
   { title: 'Publications', icon: 'mdi-book-open-variant', to: '/admin/publications' },
   { title: 'News', icon: 'mdi-newspaper', to: '/admin/news' },
   { title: 'CV Builder', icon: 'mdi-file-document-edit', to: '/admin/cv' },
-  { title: 'Media', icon: 'mdi-image-multiple', to: '/admin/media' },
 ]
 
 async function handleLogout() {

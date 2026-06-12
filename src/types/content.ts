@@ -10,6 +10,7 @@ export interface SiteSettings {
   tagline: string
   email: string
   socialLinks: SocialLink[]
+  /** Base64 data URL (compressed) or external image URL */
   profileImageUrl: string
 }
 
@@ -54,7 +55,7 @@ export interface NewsItem {
   title: string
   body: string
   date: string
-  imageUrl?: string
+  imageUrl: string
   published: boolean
   createdAt?: string
 }

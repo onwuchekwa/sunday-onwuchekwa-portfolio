@@ -5,7 +5,6 @@ const cards = [
   { title: 'Publications', description: 'Manage papers, posters, and workshops', icon: 'mdi-book-open-variant', to: '/admin/publications', color: 'primary' },
   { title: 'News', description: 'Post updates and announcements', icon: 'mdi-newspaper', to: '/admin/news', color: 'accent' },
   { title: 'CV Builder', description: 'Build your live academic CV', icon: 'mdi-file-document-edit', to: '/admin/cv', color: 'secondary' },
-  { title: 'Media', description: 'Upload photos and files', icon: 'mdi-image-multiple', to: '/admin/media', color: 'primary' },
 ]
 </script>
 

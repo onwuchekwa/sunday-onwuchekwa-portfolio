@@ -25,7 +25,6 @@ In your new project:
 | Service | How to enable |
 |---------|---------------|
 | **Firestore** | Build → Firestore Database → Create database → Start in **production mode** → choose a region |
-| **Storage** | Build → Storage → Get started → Start in production mode |
 | **Authentication** | Build → Authentication → Get started → Enable **Email/Password** sign-in |
 | **Hosting** | Build → Hosting → Get started (you'll deploy later) |
 
@@ -83,12 +82,12 @@ From the project root:
 firebase use --add
 # Select your project and give it alias "default"
 
-firebase deploy --only firestore:rules,storage
+firebase deploy --only firestore:rules
 ```
 
-This deploys:
-- **Firestore rules**: public read, authenticated write
-- **Storage rules**: public read for `/uploads/**`, authenticated write
+This deploys **Firestore rules**: public read, authenticated write.
+
+> **Images** (profile photo, news thumbnails) are compressed and stored as Base64 text inside Firestore documents — **Cloud Storage is not required**, so you can stay on the free Spark plan without enabling Storage.
 
 ---
 
@@ -164,7 +163,7 @@ Quick summary:
 | Include publication on CV | `/admin/publications` → toggle **Include in CV** |
 | Post news | `/admin/news` → Add post → toggle **Published** |
 | Build CV sections | `/admin/cv` → select section tab → Add entry → Save CV |
-| Upload profile photo | `/admin/media` → upload → copy URL → paste in Settings |
+| Upload profile photo | `/admin/settings` → select image (auto-compressed & saved to Firestore) |
 | Download CV as PDF | Visit `/cv` → click **Download PDF** |
 
 Changes save to Firestore and appear on the live site immediately — no rebuild needed for content updates.

@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useSiteSettings } from '@/composables/useSiteSettings'
-import { uploadFile, uploadPath } from '@/firebase/storage'
+import ImageUploadField from '@/components/admin/ImageUploadField.vue'
+import {
+  estimateDocumentSize,
+  FIRESTORE_DOC_LIMIT_BYTES,
+  PROFILE_IMAGE_MAX_BYTES,
+} from '@/utils/imageToBase64'
+
 const { settings, load, save, loading } = useSiteSettings()
 const saving = ref(false)
 const snackbar = ref(false)
-const imageFile = ref<File[]>([])
+const error = ref<string | null>(null)
 
 onMounted(load)
 
@@ -19,14 +25,18 @@ function removeSocialLink(index: number) {
 
 async function handleSave() {
   saving.value = true
+  error.value = null
   try {
-    if (imageFile.value[0]) {
-      const url = await uploadFile(imageFile.value[0], uploadPath('profile', imageFile.value[0].name))
-      settings.value.profileImageUrl = url
-      imageFile.value = []
+    const docSize = estimateDocumentSize({ ...settings.value })
+    if (docSize > FIRESTORE_DOC_LIMIT_BYTES) {
+      throw new Error(
+        `Document too large (${Math.round(docSize / 1024)} KB). Use a smaller profile photo.`,
+      )
     }
     await save({ ...settings.value })
     snackbar.value = true
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Save failed'
   } finally {
     saving.value = false
   }
@@ -55,18 +65,12 @@ async function handleSave() {
             <v-text-field v-model="settings.email" label="Email" type="email" required />
           </v-col>
           <v-col cols="12" md="6">
-            <v-file-input
-              v-model="imageFile"
+            <ImageUploadField
+              v-model="settings.profileImageUrl"
               label="Profile photo"
-              accept="image/*"
-              prepend-icon="mdi-camera"
-            />
-            <v-img
-              v-if="settings.profileImageUrl"
-              :src="settings.profileImageUrl"
-              max-height="120"
-              max-width="120"
-              class="rounded-lg mt-2"
+              :max-dimension="400"
+              :max-bytes="PROFILE_IMAGE_MAX_BYTES"
+              hint="Auto-compressed to fit Firestore (max ~350 KB). No Cloud Storage needed."
             />
           </v-col>
         </v-row>
@@ -91,6 +95,10 @@ async function handleSave() {
         <v-btn variant="tonal" prepend-icon="mdi-plus" class="mb-6" @click="addSocialLink">
           Add link
         </v-btn>
+
+        <v-alert v-if="error" type="error" variant="tonal" class="mb-4">
+          {{ error }}
+        </v-alert>
 
         <v-btn type="submit" color="primary" size="large" :loading="saving">
           Save settings

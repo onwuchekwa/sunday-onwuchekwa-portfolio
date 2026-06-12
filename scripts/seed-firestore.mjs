@@ -19,6 +19,9 @@ const serviceAccount = JSON.parse(readFileSync(keyPath, 'utf8'))
 initializeApp({ credential: cert(serviceAccount) })
 const db = getFirestore()
 
+console.log(`Using Firebase project: ${serviceAccount.project_id}`)
+console.log('Seeding Firestore collections...\n')
+
 const siteSettings = {
   name: 'Sunday Onwuchekwa',
   title: 'PhD Student, Computer Science',

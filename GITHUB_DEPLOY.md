@@ -36,7 +36,6 @@ The GitHub Action needs permission to deploy on your behalf.
 7. Add these roles:
    - **Firebase Hosting Admin**
    - **Cloud Datastore User** (for Firestore rules)
-   - **Storage Admin** (for Storage rules)
 8. Back in Firebase → **Service accounts** → **Generate new private key**
 9. Save the downloaded JSON file — you will paste its contents into GitHub
 
@@ -76,7 +75,7 @@ The workflow will:
 
 1. Install dependencies
 2. Build the Vue app (with your Firebase env vars baked in)
-3. Deploy Hosting + Firestore rules + Storage rules
+3. Deploy Hosting + Firestore rules
 
 Your site will be live at:
 
