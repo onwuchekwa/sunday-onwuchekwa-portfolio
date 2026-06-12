@@ -26,7 +26,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Build
         run: npm run build
@@ -43,4 +43,4 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
       - name: Deploy Hosting and Firestore rules
-        run: npx firebase-tools deploy --only hosting:sunday-onwuchekwa,firestore:rules --project "${{ secrets.VITE_FIREBASE_PROJECT_ID }}" --non-interactive
+        run: npx --yes firebase-tools@14.27.0 deploy --only hosting:sunday-onwuchekwa,firestore:rules --project "${{ secrets.VITE_FIREBASE_PROJECT_ID }}" --non-interactive
