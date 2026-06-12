@@ -17,13 +17,14 @@ onMounted(load)
             &copy; {{ year }} {{ settings.name }}. All rights reserved.
           </div>
         </v-col>
-        <v-col cols="12" md="6" class="d-flex justify-md-end ga-2">
+        <v-col cols="12" md="6" class="d-flex flex-wrap justify-md-end ga-2 footer-social">
           <v-btn
             v-for="link in settings.socialLinks"
             :key="link.url"
             :href="link.url"
             target="_blank"
             rel="noopener noreferrer"
+            :prepend-icon="link.icon || 'mdi-link'"
             variant="text"
             color="white"
             size="small"
@@ -35,3 +36,13 @@ onMounted(load)
     </v-container>
   </v-footer>
 </template>
+
+<style scoped>
+.footer-social :deep(.v-btn) {
+  color: #ffffff;
+}
+
+.footer-social :deep(.v-icon) {
+  color: #ffffff;
+}
+</style>

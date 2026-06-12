@@ -6,6 +6,7 @@ import {
   deletePublication,
 } from '@/firebase/firestore'
 import type { Publication } from '@/types/content'
+import { groupPublicationsByCategory, type PublicationCategoryGroup } from '@/utils/cvFormat'
 
 export function usePublications() {
   const publications = ref<Publication[]>([])
@@ -49,5 +50,36 @@ export function usePublications() {
       .sort((a, b) => (a.cvOrder ?? 0) - (b.cvOrder ?? 0) || b.year - a.year)
   }
 
-  return { publications, loading, error, load, create, update, remove, cvPublications }
+  function publicationsByCategory(): PublicationCategoryGroup[] {
+    return groupPublicationsByCategory(publications.value)
+  }
+
+  function cvPublicationsByCategory(): PublicationCategoryGroup[] {
+    return groupPublicationsByCategory(cvPublications())
+  }
+
+  function latestPublications(count = 2): Publication[] {
+    return [...publications.value]
+      .sort((a, b) => {
+        if (b.year !== a.year) return b.year - a.year
+        const aDate = a.createdAt ?? ''
+        const bDate = b.createdAt ?? ''
+        return bDate.localeCompare(aDate)
+      })
+      .slice(0, count)
+  }
+
+  return {
+    publications,
+    loading,
+    error,
+    load,
+    create,
+    update,
+    remove,
+    cvPublications,
+    cvPublicationsByCategory,
+    publicationsByCategory,
+    latestPublications,
+  }
 }

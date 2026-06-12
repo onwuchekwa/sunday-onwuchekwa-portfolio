@@ -1,68 +1,56 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { usePublications } from '@/composables/usePublications'
 import PublicationCard from '@/components/PublicationCard.vue'
-import type { PublicationType } from '@/types/content'
 
-const { publications, load, loading } = usePublications()
-const typeFilter = ref<PublicationType | 'all'>('all')
-const yearFilter = ref<number | 'all'>('all')
-
-const years = computed(() =>
-  [...new Set(publications.value.map((p) => p.year))].sort((a, b) => b - a),
-)
-
-const filtered = computed(() =>
-  publications.value.filter((p) => {
-    if (typeFilter.value !== 'all' && p.type !== typeFilter.value) return false
-    if (yearFilter.value !== 'all' && p.year !== yearFilter.value) return false
-    return true
-  }),
-)
+const { load, loading, publicationsByCategory } = usePublications()
+const groups = computed(() => publicationsByCategory())
 
 onMounted(load)
 </script>
 
 <template>
   <v-container class="py-12">
-    <h1 class="text-h3 font-weight-bold text-primary mb-2">Publications</h1>
-    <p class="text-body-1 text-medium-emphasis mb-8">
+    <h1 class="text-h3 font-weight-bold text-primary mb-2">Papers &amp; Publications</h1>
+    <p class="text-body-1 text-medium-emphasis mb-10">
       Research outputs at the intersection of religion, technology, and human-centered design.
     </p>
 
-    <v-row class="mb-6">
-      <v-col cols="12" sm="6" md="4">
-        <v-select
-          v-model="typeFilter"
-          :items="[
-            { title: 'All types', value: 'all' },
-            { title: 'Paper', value: 'paper' },
-            { title: 'Poster', value: 'poster' },
-            { title: 'Workshop', value: 'workshop' },
-            { title: 'Other', value: 'other' },
-          ]"
-          label="Filter by type"
-        />
-      </v-col>
-      <v-col cols="12" sm="6" md="4">
-        <v-select
-          v-model="yearFilter"
-          :items="[{ title: 'All years', value: 'all' }, ...years.map((y) => ({ title: String(y), value: y }))]"
-          label="Filter by year"
-        />
-      </v-col>
-    </v-row>
-
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-6" />
 
-    <v-row v-if="filtered.length">
-      <v-col v-for="pub in filtered" :key="pub.id" cols="12" md="6">
-        <PublicationCard :publication="pub" />
-      </v-col>
-    </v-row>
+    <template v-else>
+      <section
+        v-for="group in groups"
+        :key="group.category"
+        class="pub-category-section mb-12"
+      >
+        <h2 class="text-h5 font-weight-bold text-primary mb-6 pub-category-title">
+          {{ group.title }}
+        </h2>
 
-    <v-alert v-else-if="!loading" type="info" variant="tonal">
-      No publications match the selected filters.
-    </v-alert>
+        <div class="d-flex flex-column ga-6">
+          <PublicationCard
+            v-for="pub in group.publications"
+            :key="pub.id"
+            :publication="pub"
+          />
+        </div>
+      </section>
+
+      <v-alert v-if="!groups.length" type="info" variant="tonal">
+        No publications yet. Add them in Admin → Publications.
+      </v-alert>
+    </template>
   </v-container>
 </template>
+
+<style scoped>
+.pub-category-title {
+  border-bottom: 2px solid rgba(var(--v-theme-primary), 0.2);
+  padding-bottom: 0.5rem;
+}
+
+.pub-category-section:last-child {
+  margin-bottom: 0;
+}
+</style>

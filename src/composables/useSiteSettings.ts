@@ -15,8 +15,9 @@ export function useSiteSettings() {
     try {
       const data = await getSiteSettings()
       if (data) {
-        settings.value = data
-        cache.value = data
+        const merged = { ...defaultSiteSettings(), ...data }
+        settings.value = merged
+        cache.value = merged
       }
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to load settings'

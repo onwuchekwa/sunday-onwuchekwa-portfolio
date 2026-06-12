@@ -1,0 +1,143 @@
+.cv-section {
+  page-break-inside: avoid;
+  margin-bottom: 1.35rem;
+}
+
+.cv-document-body {
+  font-family: 'Source Sans 3', sans-serif;
+  color: #1f2933;
+}
+
+.cv-section-heading--section {
+  border-top: 1px solid #002e5d;
+  border-bottom: 1px solid #002e5d;
+  padding: 0.35rem 0;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.cv-section:first-of-type .cv-section-heading--section {
+  margin-top: 0.75rem;
+}
+
+.cv-section-heading--subsection {
+  border-top: 1px solid rgba(0, 46, 93, 0.45);
+  border-bottom: 1px solid rgba(0, 46, 93, 0.45);
+  padding: 0.25rem 0;
+  margin: 1rem 0 0.5rem;
+}
+
+.cv-section-heading__text {
+  font-family: 'Lora', serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #002e5d;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.cv-section-heading--subsection .cv-section-heading__text {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: none;
+}
+
+.cv-paragraph {
+  font-size: 0.94rem;
+  line-height: 1.55;
+  margin: 0;
+  padding-left: 0.15rem;
+}
+
+.cv-research-interests .cv-paragraph {
+  font-style: italic;
+  color: rgba(0, 0, 0, 0.82);
+}
+
+.cv-entry {
+  margin-bottom: 0.85rem;
+  page-break-inside: avoid;
+}
+
+.cv-entry:last-child {
+  margin-bottom: 0;
+}
+
+.cv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.cv-row-left {
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.cv-row-left--bold {
+  font-weight: 700;
+}
+
+.cv-row-left--italic,
+.cv-row-right--italic {
+  font-style: italic;
+}
+
+.cv-row-right {
+  font-size: 0.92rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cv-entry-line {
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.cv-entry-details {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.cv-bullet-list {
+  margin: 0.35rem 0 0 1.5rem;
+  padding-left: 0.85rem;
+  list-style-type: disc;
+  list-style-position: outside;
+}
+
+.cv-bullet-list li {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 0.2rem;
+  padding-left: 0.2rem;
+}
+
+.cv-simple-entry {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin-bottom: 0.45rem;
+}
+
+.cv-pub-intro,
+.cv-pub-footnote {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.cv-pub-footnote {
+  font-style: italic;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.cv-pub-entry {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+  padding-left: 1.25rem;
+  text-indent: -1.25rem;
+}

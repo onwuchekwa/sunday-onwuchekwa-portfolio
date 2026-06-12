@@ -17,13 +17,21 @@ async function handleLogin() {
   loading.value = true
   try {
     await auth.login(email.value, password.value)
-    const redirect = (route.query.redirect as string) || '/admin'
-    router.push(redirect)
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Login failed'
+    router.push(safeRedirect(route.query.redirect))
+  } catch {
+    error.value = 'Invalid email or password.'
   } finally {
     loading.value = false
   }
+}
+
+/** Only follow in-app paths; reject external/protocol-relative URLs. */
+function safeRedirect(value: unknown): string {
+  const target = typeof value === 'string' ? value : ''
+  if (target.startsWith('/') && !target.startsWith('//')) {
+    return target
+  }
+  return '/admin'
 }
 </script>
 

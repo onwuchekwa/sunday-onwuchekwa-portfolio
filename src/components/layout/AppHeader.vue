@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useSiteSettings } from '@/composables/useSiteSettings'
+import ProfileAvatar from '@/components/ProfileAvatar.vue'
 
 const { settings, load } = useSiteSettings()
 
@@ -16,10 +17,15 @@ onMounted(load)
 </script>
 
 <template>
-  <v-app-bar flat color="surface" elevation="1" height="72">
+  <v-app-bar flat color="primary" elevation="1" height="72">
     <v-container class="d-flex align-center py-0">
-      <router-link to="/" class="text-decoration-none text-primary">
-        <span class="text-h6 font-weight-bold">{{ settings.name }}</span>
+      <router-link to="/" class="brand-lockup text-decoration-none d-flex align-center ga-3">
+        <ProfileAvatar
+          :image-url="settings.profileImageUrl"
+          :size="40"
+          :icon-size="22"
+        />
+        <span class="text-h6 font-weight-bold text-white">{{ settings.name }}</span>
       </router-link>
 
       <v-spacer />
@@ -30,7 +36,7 @@ onMounted(load)
           :key="link.to"
           :to="link.to"
           variant="text"
-          color="primary"
+          color="white"
         >
           {{ link.title }}
         </v-btn>
@@ -38,7 +44,7 @@ onMounted(load)
 
       <v-menu class="d-md-none">
         <template #activator="{ props }">
-          <v-btn icon="mdi-menu" variant="text" color="primary" v-bind="props" />
+          <v-btn icon="mdi-menu" variant="text" color="white" v-bind="props" />
         </template>
         <v-list>
           <v-list-item
@@ -52,3 +58,9 @@ onMounted(load)
     </v-container>
   </v-app-bar>
 </template>
+
+<style scoped>
+.brand-lockup:hover {
+  opacity: 0.92;
+}
+</style>

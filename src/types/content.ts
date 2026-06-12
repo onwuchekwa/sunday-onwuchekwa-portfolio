@@ -9,6 +9,9 @@ export interface SiteSettings {
   title: string
   tagline: string
   email: string
+  phone: string
+  /** Personal website URL shown on CV header and contact areas */
+  websiteUrl: string
   socialLinks: SocialLink[]
   /** Base64 data URL (compressed) or external image URL */
   profileImageUrl: string
@@ -29,6 +32,52 @@ export interface About {
 
 export type PublicationType = 'paper' | 'poster' | 'workshop' | 'other'
 
+export type PublicationCvCategory =
+  | 'journal_article'
+  | 'conference_proceedings'
+  | 'technology_demonstration'
+  | 'workshop_extended_abstract'
+  | 'poster_extended_abstract'
+  | 'archived_abstract'
+
+export const PUBLICATION_CV_CATEGORIES: {
+  value: PublicationCvCategory
+  title: string
+  order: number
+}[] = [
+  { value: 'journal_article', title: 'Journal Articles', order: 0 },
+  { value: 'conference_proceedings', title: 'Conference Proceedings', order: 1 },
+  { value: 'technology_demonstration', title: 'Technology Demonstration (Archived Abstract)', order: 2 },
+  {
+    value: 'workshop_extended_abstract',
+    title: 'Archived Extended Abstracts for Workshops Organized',
+    order: 3,
+  },
+  {
+    value: 'poster_extended_abstract',
+    title: 'Archived Extended Abstracts (and presented as posters)',
+    order: 4,
+  },
+  { value: 'archived_abstract', title: 'Archived Abstracts (and presented as posters)', order: 5 },
+]
+
+export function defaultCvCategoryForType(type: PublicationType): PublicationCvCategory {
+  switch (type) {
+    case 'poster':
+      return 'poster_extended_abstract'
+    case 'workshop':
+      return 'workshop_extended_abstract'
+    case 'other':
+      return 'archived_abstract'
+    default:
+      return 'conference_proceedings'
+  }
+}
+
+export function resolvePublicationCvCategory(pub: Publication): PublicationCvCategory {
+  return pub.cvCategory ?? defaultCvCategoryForType(pub.type)
+}
+
 export interface PublicationLinks {
   pdf?: string
   doi?: string
@@ -47,6 +96,15 @@ export interface Publication {
   featured: boolean
   includeInCv: boolean
   cvOrder: number
+  cvCategory?: PublicationCvCategory
+  cvStatus?: string
+  acceptanceRate?: string
+  scholarNote?: string
+  isJournalModel?: boolean
+  /** Thumbnail image URL or compressed Base64 data URL (e.g. from publication page / og:image) */
+  thumbnailUrl?: string
+  /** Link to the publication source page (ACM DL, DOI landing page, etc.) */
+  sourceUrl?: string
   createdAt?: string
 }
 
@@ -62,9 +120,11 @@ export interface NewsItem {
 
 export const defaultSiteSettings = (): SiteSettings => ({
   name: 'Sunday Onwuchekwa',
-  title: 'PhD Student, Computer Science',
-  tagline: 'Human-Computer Interaction · Religion & Technology',
-  email: 'sunday.onwuchekwa@example.edu',
+  title: 'PhD Student, Computer Science · Brigham Young University',
+  tagline: 'Human-Computer Interaction · Human-Centered Computing · Religion & Technology',
+  email: 'sunday.onwuchekwa@byu.edu',
+  phone: '',
+  websiteUrl: 'https://sunday-onwuchekwa.web.app',
   socialLinks: [
     { platform: 'Google Scholar', url: 'https://scholar.google.com', icon: 'mdi-school' },
     { platform: 'ORCID', url: 'https://orcid.org', icon: 'mdi-identifier' },

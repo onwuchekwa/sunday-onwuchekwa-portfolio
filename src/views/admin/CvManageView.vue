@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useCv } from '@/composables/useCv'
-import { CV_SECTION_META, type CvSectionId } from '@/types/cv'
+import { CV_SECTION_META, isEntryVisible, type CvSectionId } from '@/types/cv'
 
 const { cv, load, save, loading } = useCv()
-const activeTab = ref<CvSectionId>('education')
+const activeTab = ref<CvSectionId>('researchInterests')
 const saving = ref(false)
 const snackbar = ref(false)
 const entryDialog = ref(false)
 const editingEntryIndex = ref<number | null>(null)
 const entryForm = ref<Record<string, string>>({})
+const entryVisible = ref(true)
 
 const activeSection = computed(() =>
   cv.value.sections.find((s) => s.id === activeTab.value),
@@ -19,11 +20,49 @@ const activeMeta = computed(() =>
   CV_SECTION_META.find((m) => m.id === activeTab.value),
 )
 
+const sectionGuidance = computed(() => {
+  switch (activeTab.value) {
+    case 'education':
+      return {
+        type: 'info' as const,
+        text: 'Public CV layout: line 1 institution | location, line 2 degree | year. Split location from institution for right-aligned display.',
+      }
+    case 'appointments':
+      return {
+        type: 'info' as const,
+        text: 'University roles only: Research Assistant, TA, instructor, and other academic appointments. Optional location appears right-aligned on line 2.',
+      }
+    case 'industryExperience':
+      return {
+        type: 'info' as const,
+        text: 'Paid, non-academic jobs only (e.g. Springboard). Company and location appear on line 2 of the public CV.',
+      }
+    case 'volunteerExperience':
+      return {
+        type: 'info' as const,
+        text: 'Unpaid community, church, nonprofit, or pro bono roles. Organization and location appear on line 2 of the public CV.',
+      }
+    case 'service':
+      return {
+        type: 'info' as const,
+        text: 'Academic service: peer review, program committees, workshop or conference organizing, and departmental or university committees. Not volunteer work — use Volunteer Experience for that.',
+      }
+    case 'teaching':
+      return {
+        type: 'warning' as const,
+        text: 'Deprecated — add TA and course instruction under Academic Experience instead. This section is hidden from the public CV by default.',
+      }
+    default:
+      return null
+  }
+})
+
 onMounted(load)
 
 function openAddEntry() {
   editingEntryIndex.value = null
   entryForm.value = {}
+  entryVisible.value = true
   activeMeta.value?.fields.forEach((f) => {
     entryForm.value[f.key] = ''
   })
@@ -34,7 +73,12 @@ function openEditEntry(index: number) {
   const section = activeSection.value
   if (!section) return
   editingEntryIndex.value = index
-  entryForm.value = { ...section.entries[index] } as Record<string, string>
+  const entry = section.entries[index]
+  const { visible: _visible, ...fields } = entry
+  entryForm.value = Object.fromEntries(
+    Object.entries(fields).map(([key, value]) => [key, String(value ?? '')]),
+  )
+  entryVisible.value = isEntryVisible(entry)
   entryDialog.value = true
 }
 
@@ -42,7 +86,10 @@ function saveEntry() {
   const section = activeSection.value
   if (!section) return
 
-  const entry = { ...entryForm.value }
+  const entry = {
+    ...entryForm.value,
+    visible: entryVisible.value,
+  }
   if (editingEntryIndex.value !== null) {
     section.entries[editingEntryIndex.value] = entry
   } else {
@@ -53,6 +100,12 @@ function saveEntry() {
 
 function deleteEntry(index: number) {
   activeSection.value?.entries.splice(index, 1)
+}
+
+function toggleEntryVisibility(index: number, visible: boolean) {
+  const section = activeSection.value
+  if (!section) return
+  section.entries[index] = { ...section.entries[index], visible }
 }
 
 async function handleSave() {
@@ -66,7 +119,11 @@ async function handleSave() {
 }
 
 function entryDisplay(entry: Record<string, unknown>): string {
-  return Object.values(entry).filter(Boolean).join(' · ')
+  return Object.entries(entry)
+    .filter(([key]) => key !== 'visible')
+    .map(([, value]) => value)
+    .filter(Boolean)
+    .join(' · ')
 }
 </script>
 
@@ -121,26 +178,73 @@ function entryDisplay(entry: Record<string, unknown>): string {
             class="mb-1"
           />
         </v-card>
+
+        <v-card class="pa-4 mt-4">
+          <h3 class="text-subtitle-2 font-weight-bold mb-3">Publications intro</h3>
+          <v-textarea
+            v-model="cv.publicationsIntro"
+            label="Intro paragraph on public CV"
+            rows="5"
+            hint="Shown above publication subsections on /cv and in the PDF."
+            persistent-hint
+          />
+        </v-card>
       </v-col>
 
       <v-col cols="12" md="9">
         <v-card class="pa-6">
           <div class="d-flex align-center justify-space-between mb-4">
-            <h2 class="text-h6 font-weight-bold">{{ activeMeta?.title }}</h2>
+            <div>
+              <h2 class="text-h6 font-weight-bold">{{ activeMeta?.title }}</h2>
+              <p
+                v-if="activeTab === 'appointments'"
+                class="text-caption text-medium-emphasis mb-0"
+              >
+                Academic & university roles
+              </p>
+            </div>
             <v-btn color="primary" prepend-icon="mdi-plus" size="small" @click="openAddEntry">
               Add entry
             </v-btn>
           </div>
 
+          <v-alert
+            v-if="sectionGuidance"
+            :type="sectionGuidance.type"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+          >
+            {{ sectionGuidance.text }}
+          </v-alert>
+
           <v-data-table
             v-if="activeSection?.entries.length"
             :headers="[
               { title: 'Entry', key: 'display' },
+              { title: 'Show on public CV', key: 'visible', width: 150 },
               { title: 'Actions', key: 'actions', width: 100 },
             ]"
-            :items="activeSection.entries.map((e, i) => ({ ...e, display: entryDisplay(e), _index: i }))"
+            :items="
+              activeSection.entries.map((e, i) => ({
+                ...e,
+                display: entryDisplay(e),
+                visible: isEntryVisible(e),
+                _index: i,
+              }))
+            "
+            :row-props="({ item }) => ({ class: item.visible ? '' : 'cv-entry-hidden' })"
             class="elevation-0"
           >
+            <template #item.visible="{ item }">
+              <v-switch
+                :model-value="item.visible"
+                color="primary"
+                density="compact"
+                hide-details
+                @update:model-value="toggleEntryVisibility(item._index, $event ?? true)"
+              />
+            </template>
             <template #item.actions="{ item }">
               <v-btn icon="mdi-pencil" variant="text" size="small" @click="openEditEntry(item._index)" />
               <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="deleteEntry(item._index)" />
@@ -175,6 +279,12 @@ function entryDisplay(entry: Record<string, unknown>): string {
               class="mb-2"
             />
           </template>
+          <v-switch
+            v-model="entryVisible"
+            label="Show on public CV"
+            color="primary"
+            class="mb-2"
+          />
           <div class="d-flex justify-end ga-2 mt-4">
             <v-btn variant="text" @click="entryDialog = false">Cancel</v-btn>
             <v-btn type="submit" color="primary">Save entry</v-btn>
@@ -188,3 +298,9 @@ function entryDisplay(entry: Record<string, unknown>): string {
     </v-snackbar>
   </div>
 </template>
+
+<style scoped>
+:deep(.cv-entry-hidden) {
+  opacity: 0.55;
+}
+</style>

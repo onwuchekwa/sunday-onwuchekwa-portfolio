@@ -7,6 +7,7 @@ import {
   FIRESTORE_DOC_LIMIT_BYTES,
   PROFILE_IMAGE_MAX_BYTES,
 } from '@/utils/imageToBase64'
+import { defaultSiteSettings } from '@/types/content'
 
 const { settings, load, save, loading } = useSiteSettings()
 const saving = ref(false)
@@ -33,7 +34,13 @@ async function handleSave() {
         `Document too large (${Math.round(docSize / 1024)} KB). Use a smaller profile photo.`,
       )
     }
-    await save({ ...settings.value })
+    await save({
+      ...defaultSiteSettings(),
+      ...settings.value,
+      profileImageUrl: settings.value.profileImageUrl ?? '',
+      websiteUrl: settings.value.websiteUrl ?? '',
+      phone: settings.value.phone ?? '',
+    })
     snackbar.value = true
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Save failed'
@@ -65,12 +72,29 @@ async function handleSave() {
             <v-text-field v-model="settings.email" label="Email" type="email" required />
           </v-col>
           <v-col cols="12" md="6">
+            <v-text-field
+              v-model="settings.phone"
+              label="Phone"
+              hint="Shown on your CV header"
+              persistent-hint
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="settings.websiteUrl"
+              label="Website URL"
+              hint="Shown on your CV header (e.g. https://sunday-onwuchekwa.web.app)"
+              persistent-hint
+            />
+          </v-col>
+          <v-col cols="12" md="6">
             <ImageUploadField
               v-model="settings.profileImageUrl"
               label="Profile photo"
               :max-dimension="400"
               :max-bytes="PROFILE_IMAGE_MAX_BYTES"
-              hint="Auto-compressed to fit Firestore (max ~350 KB). No Cloud Storage needed."
+              crop-mode="portrait-face"
+              hint="Large originals are auto-cropped to center your face, then compressed for Firestore."
             />
           </v-col>
         </v-row>

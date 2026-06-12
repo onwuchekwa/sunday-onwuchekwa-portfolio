@@ -33,9 +33,10 @@ The GitHub Action needs permission to deploy on your behalf.
 4. Click **Manage service account permissions** (opens Google Cloud Console)
 5. Find the `firebase-adminsdk-...` service account
 6. Click **Edit** (pencil icon) → **Add another role**
-7. Add these roles:
+7. Add these roles (use **Add another role** for each):
+   - **Firebase Admin** (recommended — covers Hosting + Firestore rules deploy)
    - **Firebase Hosting Admin**
-   - **Cloud Datastore User** (for Firestore rules)
+   - **Service Usage Consumer** (fixes `Permission denied to get service [firestore.googleapis.com]`)
 8. Back in Firebase → **Service accounts** → **Generate new private key**
 9. Save the downloaded JSON file — you will paste its contents into GitHub
 
@@ -57,12 +58,13 @@ Add each secret below. Values come from your Firebase web app config (Project se
 
 > For `FIREBASE_SERVICE_ACCOUNT`, open the JSON file in a text editor, select all, and paste the full JSON (including `{` and `}`).
 
-### 5. Enable Firebase Hosting (first time only)
+### 5. Enable Firebase services in the console (first time only)
 
-If you have never deployed Hosting before:
+Do these once in [Firebase Console](https://console.firebase.google.com/) so CI does not need to enable APIs:
 
-1. Firebase Console → **Hosting** → **Get started**
-2. You do not need to finish the CLI wizard — the GitHub Action will deploy for you
+1. **Firestore** → **Create database** → Production mode → pick a region
+2. **Authentication** → enable **Email/Password**
+3. **Hosting** → **Get started** (you do not need to finish the CLI wizard)
 
 ### 6. Trigger the first deploy
 
@@ -106,7 +108,21 @@ Content you edit in `/admin` is stored in Firestore and does **not** require a r
 - Regenerate the service account key and update the `FIREBASE_SERVICE_ACCOUNT` secret
 - Confirm the service account has **Firebase Hosting Admin** role
 
-### `HTTP Error: 403, Permission denied`
+### `HTTP Error: 403, Permission denied to get service [firestore.googleapis.com]`
+
+This means the **service account in `FIREBASE_SERVICE_ACCOUNT`** lacks IAM permissions.
+
+1. Open the `FIREBASE_SERVICE_ACCOUNT` secret in GitHub and note the `"client_email"` value (e.g. `firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com`). You can also open your downloaded JSON key file locally.
+2. Go to [Google Cloud IAM](https://console.cloud.google.com/iam-admin/iam) → select project **`sunday-onwuchekwa-portfolio`**
+3. Find that service account → click **Edit** (pencil)
+4. **Add another role** → add **Firebase Admin**
+5. **Add another role** → add **Service Usage Consumer**
+6. Click **Save**
+7. Wait 1–2 minutes, then re-run the GitHub Action (**Actions → Deploy to Firebase → Re-run jobs**)
+
+You do **not** need a new JSON key after adding roles — the existing `FIREBASE_SERVICE_ACCOUNT` secret keeps working.
+
+### `HTTP Error: 403` (other)
 
 Add the roles listed in Step 3 to the Firebase Admin SDK service account.
 

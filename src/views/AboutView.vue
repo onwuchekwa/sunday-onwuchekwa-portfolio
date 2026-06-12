@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import { useAbout } from '@/composables/useAbout'
+import ProfileAvatar from '@/components/ProfileAvatar.vue'
 
 const { settings, load: loadSettings } = useSiteSettings()
 const { about, load: loadAbout } = useAbout()
@@ -15,12 +16,13 @@ onMounted(async () => {
   <v-container class="py-12">
     <v-row>
       <v-col cols="12" md="4" class="text-center">
-        <v-avatar v-if="settings.profileImageUrl" size="240" class="mb-6 elevation-2">
-          <v-img :src="settings.profileImageUrl" cover alt="Profile photo" />
-        </v-avatar>
-        <v-avatar v-else size="240" color="surface-variant" class="mb-6">
-          <v-icon icon="mdi-account" size="120" color="secondary" />
-        </v-avatar>
+        <ProfileAvatar
+          :image-url="settings.profileImageUrl"
+          :size="240"
+          :icon-size="120"
+          :show-border="false"
+          class="mb-6 elevation-2"
+        />
         <h2 class="text-h5 font-weight-bold">{{ settings.name }}</h2>
         <p class="text-body-1 text-medium-emphasis">{{ settings.title }}</p>
       </v-col>

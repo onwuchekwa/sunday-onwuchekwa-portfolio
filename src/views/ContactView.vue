@@ -29,9 +29,10 @@ onMounted(load)
             :href="`mailto:${settings.email}`"
             block
             color="primary"
+            variant="flat"
             size="large"
             prepend-icon="mdi-email"
-            class="mb-6"
+            class="mb-6 contact-email-btn"
           >
             {{ settings.email }}
           </v-btn>

@@ -2,6 +2,10 @@
 
 :root {
   font-family: 'Source Sans 3', sans-serif;
+  --byu-navy: #002E5D;
+  --byu-royal: #0047BA;
+  --byu-light-blue: #BDD6E6;
+  --text-body: #3E4C59;
 }
 
 h1, h2, h3, h4, h5, h6,
@@ -9,6 +13,29 @@ h1, h2, h3, h4, h5, h6,
   font-family: 'Lora', serif;
 }
 
-a {
+/* Do not override Vuetify button/link contrast (v-btn with to/href renders as <a>) */
+a:not(.v-btn) {
   color: inherit;
+}
+
+.text-body-readable {
+  color: var(--text-body);
+}
+
+/* BYU filled buttons: white text on navy/royal (Vuetify custom theme) */
+.v-theme--portfolio {
+  --v-theme-on-primary: 255, 255, 255;
+  --v-theme-on-secondary: 255, 255, 255;
+}
+
+.v-btn.bg-primary,
+.v-btn.bg-secondary {
+  color: #ffffff !important;
+}
+
+.v-btn.bg-primary .v-btn__content,
+.v-btn.bg-secondary .v-btn__content,
+.v-btn.bg-primary .v-icon,
+.v-btn.bg-secondary .v-icon {
+  color: #ffffff !important;
 }

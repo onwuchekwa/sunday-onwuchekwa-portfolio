@@ -1,6 +1,12 @@
 import { ref } from 'vue'
 import { getCvDocument, saveCvDocument } from '@/firebase/firestore'
-import { createDefaultCvDocument, type CvDocument, type CvSection } from '@/types/cv'
+import {
+  createDefaultCvDocument,
+  isEntryVisible,
+  normalizeCvDocument,
+  type CvDocument,
+  type CvSection,
+} from '@/types/cv'
 
 export function useCv() {
   const cv = ref<CvDocument>(createDefaultCvDocument())
@@ -13,7 +19,7 @@ export function useCv() {
     try {
       const data = await getCvDocument()
       if (data) {
-        cv.value = data
+        cv.value = normalizeCvDocument(data)
       }
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to load CV'
@@ -23,8 +29,9 @@ export function useCv() {
   }
 
   async function save(data: CvDocument) {
-    await saveCvDocument(data)
-    cv.value = { ...data, lastUpdated: new Date().toISOString() }
+    const normalized = normalizeCvDocument(data)
+    await saveCvDocument(normalized)
+    cv.value = { ...normalized, lastUpdated: new Date().toISOString() }
   }
 
   function visibleSections(): CvSection[] {
@@ -33,5 +40,13 @@ export function useCv() {
       .sort((a, b) => a.order - b.order)
   }
 
-  return { cv, loading, error, load, save, visibleSections }
+  function visibleEntries(section: CvSection): Record<string, unknown>[] {
+    return section.entries.filter(isEntryVisible)
+  }
+
+  function sectionHasVisibleEntries(section: CvSection): boolean {
+    return visibleEntries(section).length > 0
+  }
+
+  return { cv, loading, error, load, save, visibleSections, visibleEntries, sectionHasVisibleEntries }
 }

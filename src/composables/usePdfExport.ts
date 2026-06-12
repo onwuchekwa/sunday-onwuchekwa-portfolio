@@ -12,7 +12,7 @@ export function usePdfExport() {
       const { default: html2pdf } = await import('html2pdf.js')
       await html2pdf()
         .set({
-          margin: [0.5, 0.5, 0.5, 0.5],
+          margin: [0.6, 0.6, 0.6, 0.6],
           filename,
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: { scale: 2, useCORS: true, logging: false },
