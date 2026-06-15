@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { loadSiteSettingsOnce } from '@/composables/useSiteSettings'
+import type { PublicPageId } from '@/types/content'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -9,12 +11,52 @@ const router = createRouter({
       component: () => import('@/layouts/PublicLayout.vue'),
       children: [
         { path: '', name: 'home', component: () => import('@/views/HomeView.vue') },
-        { path: 'about', name: 'about', component: () => import('@/views/AboutView.vue') },
-        { path: 'publications', name: 'publications', component: () => import('@/views/PublicationsView.vue') },
-        { path: 'news', name: 'news', component: () => import('@/views/NewsView.vue') },
-        { path: 'news/:id', name: 'news-detail', component: () => import('@/views/NewsDetailView.vue') },
-        { path: 'cv', name: 'cv', component: () => import('@/views/CvView.vue') },
-        { path: 'contact', name: 'contact', component: () => import('@/views/ContactView.vue') },
+        {
+          path: 'about',
+          name: 'about',
+          component: () => import('@/views/AboutView.vue'),
+          meta: { page: 'about' },
+        },
+        {
+          path: 'publications',
+          name: 'publications',
+          component: () => import('@/views/PublicationsView.vue'),
+          meta: { page: 'publications' },
+        },
+        {
+          path: 'news',
+          name: 'news',
+          component: () => import('@/views/NewsView.vue'),
+          meta: { page: 'news' },
+        },
+        {
+          path: 'news/:id',
+          name: 'news-detail',
+          component: () => import('@/views/NewsDetailView.vue'),
+          meta: { page: 'news' },
+        },
+        {
+          path: 'cv',
+          name: 'cv',
+          component: () => import('@/views/CvView.vue'),
+          meta: { page: 'cv' },
+        },
+        {
+          path: 'contact',
+          name: 'contact',
+          component: () => import('@/views/ContactView.vue'),
+          meta: { page: 'contact' },
+        },
+        {
+          path: 'error',
+          name: 'error',
+          component: () => import('@/views/ErrorView.vue'),
+        },
+        {
+          path: ':pathMatch(.*)*',
+          name: 'not-found',
+          component: () => import('@/views/NotFoundView.vue'),
+        },
       ],
     },
     {
@@ -52,6 +94,15 @@ router.beforeEach(async (to) => {
 
   if (to.meta.guest && auth.isAuthenticated) {
     return { name: 'admin-dashboard' }
+  }
+
+  // Hidden public pages 404 for visitors; admins can still preview them.
+  const page = to.meta.page as PublicPageId | undefined
+  if (page && !auth.isAuthenticated) {
+    const settings = await loadSiteSettingsOnce()
+    if (settings.pageVisibility[page] === false) {
+      return { name: 'not-found' }
+    }
   }
 })
 

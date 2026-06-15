@@ -35,6 +35,13 @@ const siteSettings = {
     { platform: 'LinkedIn', url: 'https://linkedin.com/in/sunday-onwuchekwa', icon: 'mdi-linkedin' },
   ],
   profileImageUrl: '',
+  pageVisibility: {
+    about: true,
+    publications: true,
+    news: true,
+    cv: true,
+    contact: true,
+  },
 }
 
 const about = {
@@ -151,8 +158,27 @@ const cv = {
       visible: true,
       order: 0,
       entries: [
-        { text: 'Religion & Technology', visible: true },
-        { text: 'Human-Computer Interaction', visible: true },
+        {
+          title: 'Religion & Technology',
+          description:
+            'Studying how congregations and individuals use (and resist) digital tools in worship, fellowship, and spiritual formation.',
+          icon: 'mdi-church',
+          visible: true,
+        },
+        {
+          title: 'Participatory Design',
+          description:
+            'Partnering with faith communities and underserved groups to co-design technologies that reflect their values and practices.',
+          icon: 'mdi-account-group',
+          visible: true,
+        },
+        {
+          title: 'Human-Centered Computing',
+          description:
+            'Applying qualitative HCI methods—ethnography, interviews, and field studies—to understand technology in everyday life.',
+          icon: 'mdi-heart-pulse',
+          visible: true,
+        },
       ],
     },
     {
@@ -364,32 +390,10 @@ const cv = {
       ],
     },
     {
-      id: 'teaching',
-      title: 'Teaching',
-      visible: false,
-      order: 10,
-      entries: [
-        {
-          course: 'CS 110',
-          institution: 'Brigham Young University',
-          term: 'Winter 2024',
-          role: 'Teaching Assistant',
-          visible: false,
-        },
-        {
-          course: 'CS 601',
-          institution: 'Brigham Young University',
-          term: 'Fall 2023',
-          role: 'Grader',
-          visible: false,
-        },
-      ],
-    },
-    {
       id: 'skills',
       title: 'Skills',
       visible: true,
-      order: 11,
+      order: 10,
       entries: [
         {
           category: 'Research Methods',

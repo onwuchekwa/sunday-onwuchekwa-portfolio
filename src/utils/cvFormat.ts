@@ -80,9 +80,36 @@ export function normalizeInstitutionEntry(entry: Record<string, unknown>): Recor
   return { ...entry, institution, location }
 }
 
+export function normalizeResearchInterestEntry(entry: Record<string, unknown>): Record<string, unknown> {
+  const title = resolveResearchInterestTitle(entry)
+  const { text: _legacyText, ...rest } = entry
+  return title ? { ...rest, title } : { ...rest }
+}
+
+export function resolveResearchInterestTitle(entry: Record<string, unknown>): string {
+  return String(entry.title ?? entry.text ?? '').trim()
+}
+
+export interface ResearchInterestDisplay {
+  title: string
+  description: string
+  icon: string
+}
+
+const DEFAULT_RESEARCH_ICON = 'mdi-lightbulb-outline'
+
+export function toResearchInterestDisplay(entry: Record<string, unknown>): ResearchInterestDisplay {
+  const icon = String(entry.icon ?? '').trim()
+  return {
+    title: resolveResearchInterestTitle(entry),
+    description: String(entry.description ?? '').trim(),
+    icon: icon || DEFAULT_RESEARCH_ICON,
+  }
+}
+
 export function formatResearchInterests(entries: Record<string, unknown>[]): string {
   return entries
-    .map((e) => String(e.text ?? '').trim())
+    .map((e) => resolveResearchInterestTitle(e))
     .filter(Boolean)
     .join(', ')
 }
@@ -122,8 +149,6 @@ export function formatSimpleEntry(entry: Record<string, unknown>, sectionId: str
       return [entry.title, entry.venue, entry.date].filter(Boolean).join(' · ')
     case 'grants':
       return [entry.title, entry.funder, entry.dates].filter(Boolean).join(' · ')
-    case 'teaching':
-      return [entry.role, entry.course, entry.institution, entry.term].filter(Boolean).join(' · ')
     case 'skills': {
       const items = String(entry.items ?? '')
       return `${entry.category}: ${items}`

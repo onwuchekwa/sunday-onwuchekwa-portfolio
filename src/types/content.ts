@@ -4,6 +4,27 @@ export interface SocialLink {
   icon?: string
 }
 
+/** Public pages that can be toggled on/off from Admin → Settings. */
+export type PublicPageId = 'about' | 'publications' | 'news' | 'cv' | 'contact'
+
+export type PageVisibility = Record<PublicPageId, boolean>
+
+export const PUBLIC_PAGES: { id: PublicPageId; title: string }[] = [
+  { id: 'about', title: 'About' },
+  { id: 'publications', title: 'Publications' },
+  { id: 'news', title: 'News' },
+  { id: 'cv', title: 'CV' },
+  { id: 'contact', title: 'Contact' },
+]
+
+export const defaultPageVisibility = (): PageVisibility => ({
+  about: true,
+  publications: true,
+  news: true,
+  cv: true,
+  contact: true,
+})
+
 export interface SiteSettings {
   name: string
   title: string
@@ -15,6 +36,8 @@ export interface SiteSettings {
   socialLinks: SocialLink[]
   /** Base64 data URL (compressed) or external image URL */
   profileImageUrl: string
+  /** Which public pages appear in the menu and are reachable */
+  pageVisibility: PageVisibility
 }
 
 export interface EducationEntry {
@@ -131,6 +154,7 @@ export const defaultSiteSettings = (): SiteSettings => ({
     { platform: 'LinkedIn', url: 'https://linkedin.com', icon: 'mdi-linkedin' },
   ],
   profileImageUrl: '',
+  pageVisibility: defaultPageVisibility(),
 })
 
 export const defaultAbout = (): About => ({

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useCv } from '@/composables/useCv'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import { usePublications } from '@/composables/usePublications'
@@ -11,15 +12,19 @@ import CvIndustryExperience from '@/components/cv/CvIndustryExperience.vue'
 import CvSimpleList from '@/components/cv/CvSimpleList.vue'
 import CvPublications from '@/components/cv/CvPublications.vue'
 import CvPdfButton from '@/components/cv/CvPdfButton.vue'
+import UnderConstruction from '@/components/UnderConstruction.vue'
 import { usePdfExport } from '@/composables/usePdfExport'
 import type { CvSectionId } from '@/types/cv'
 import { isEntryVisible } from '@/types/cv'
 
-const { cv, load: loadCv, visibleSections, visibleEntries, sectionHasVisibleEntries, loading } =
+const { cv, load: loadCv, visibleSections, visibleEntries, sectionHasVisibleEntries, loading, error: cvError } =
   useCv()
 const { settings, load: loadSettings } = useSiteSettings()
-const { load: loadPubs, cvPublicationsByCategory } = usePublications()
+const { load: loadPubs, cvPublicationsByCategory, error: pubsError } = usePublications()
 const { cvFilename } = usePdfExport()
+const route = useRoute()
+const router = useRouter()
+const loaded = ref(false)
 
 const pdfName = computed(() => cvFilename(settings.value.name))
 const publicationGroups = computed(() => cvPublicationsByCategory())
@@ -86,8 +91,19 @@ function formatLastUpdated(iso: string): string {
   })
 }
 
+const hasContent = computed(
+  () => renderedSections.value.length > 0 || publicationGroups.value.length > 0,
+)
+
+watch([cvError, pubsError], ([cvE, pubE]) => {
+  if (cvE || pubE) {
+    router.replace({ name: 'error', query: { code: '503', from: route.fullPath } })
+  }
+})
+
 onMounted(async () => {
   await Promise.all([loadCv(), loadSettings(), loadPubs()])
+  loaded.value = true
 })
 </script>
 
@@ -105,7 +121,12 @@ onMounted(async () => {
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-6" />
 
-    <v-card class="pa-8 pa-md-12 cv-document" elevation="2">
+    <UnderConstruction
+      v-if="loaded && !hasContent"
+      title="The CV page is under construction"
+    />
+
+    <v-card v-else class="pa-8 pa-md-12 cv-document" elevation="2">
       <div id="cv-print-target" class="cv-print-target cv-document-body">
         <CvHeader :settings="settings" />
 

@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { usePublications } from '@/composables/usePublications'
 import PublicationCard from '@/components/PublicationCard.vue'
+import UnderConstruction from '@/components/UnderConstruction.vue'
 
-const { load, loading, publicationsByCategory } = usePublications()
+const { load, loading, error, publicationsByCategory } = usePublications()
 const groups = computed(() => publicationsByCategory())
+const route = useRoute()
+const router = useRouter()
+
+watch(error, (e) => {
+  if (e) router.replace({ name: 'error', query: { code: '503', from: route.fullPath } })
+})
 
 onMounted(load)
 </script>
@@ -37,9 +45,10 @@ onMounted(load)
         </div>
       </section>
 
-      <v-alert v-if="!groups.length" type="info" variant="tonal">
-        No publications yet. Add them in Admin → Publications.
-      </v-alert>
+      <UnderConstruction
+        v-if="!groups.length"
+        title="The Publications page is under construction"
+      />
     </template>
   </v-container>
 </template>

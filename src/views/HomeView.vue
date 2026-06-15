@@ -1,36 +1,29 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import { usePublications } from '@/composables/usePublications'
+import { useCv } from '@/composables/useCv'
+import { useNews } from '@/composables/useNews'
+import { toResearchInterestDisplay } from '@/utils/cvFormat'
 import PublicationCard from '@/components/PublicationCard.vue'
+import NewsCard from '@/components/NewsCard.vue'
 import ProfileAvatar from '@/components/ProfileAvatar.vue'
 
 const { settings, load: loadSettings } = useSiteSettings()
 const { publications, load: loadPubs, latestPublications } = usePublications()
+const { cv, load: loadCv, visibleEntries } = useCv()
+const { newsItems, load: loadNews, latestNews } = useNews()
 
-const researchFocus = [
-  {
-    icon: 'mdi-church',
-    title: 'Religion & Technology',
-    description:
-      'Studying how congregations and individuals use (and resist) digital tools in worship, fellowship, and spiritual formation.',
-  },
-  {
-    icon: 'mdi-account-group',
-    title: 'Participatory Design',
-    description:
-      'Partnering with faith communities and underserved groups to co-design technologies that reflect their values and practices.',
-  },
-  {
-    icon: 'mdi-heart-pulse',
-    title: 'Human-Centered Computing',
-    description:
-      'Applying qualitative HCI methods—ethnography, interviews, and field studies—to understand technology in everyday life.',
-  },
-]
+const researchFocus = computed(() => {
+  const section = cv.value.sections.find((s) => s.id === 'researchInterests')
+  if (!section) return []
+  return visibleEntries(section)
+    .map(toResearchInterestDisplay)
+    .filter((item) => item.title)
+})
 
 onMounted(async () => {
-  await Promise.all([loadSettings(), loadPubs()])
+  await Promise.all([loadSettings(), loadPubs(), loadCv(), loadNews(true)])
 })
 </script>
 
@@ -117,7 +110,32 @@ onMounted(async () => {
       </v-container>
     </section>
 
-    <section class="py-12">
+    <section v-if="newsItems.length" class="py-12">
+      <v-container>
+        <h2 class="text-h4 font-weight-bold text-primary mb-6">Latest News</h2>
+        <v-row>
+          <v-col
+            v-for="item in latestNews(3)"
+            :key="item.id"
+            cols="12"
+            md="4"
+          >
+            <NewsCard :item="item" />
+          </v-col>
+        </v-row>
+        <v-btn
+          to="/news"
+          variant="text"
+          color="primary"
+          class="mt-4"
+          append-icon="mdi-arrow-right"
+        >
+          See all news
+        </v-btn>
+      </v-container>
+    </section>
+
+    <section v-if="researchFocus.length" class="py-12">
       <v-container>
         <h2 class="text-h4 font-weight-bold text-primary mb-6">Research Focus</h2>
         <v-row>

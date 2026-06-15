@@ -66,8 +66,7 @@ function displayWebsite(url: string): string {
 <style scoped>
 .cv-header {
   margin-bottom: 0.5rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #002e5d;
+  padding-bottom: 0;
 }
 
 .cv-name {

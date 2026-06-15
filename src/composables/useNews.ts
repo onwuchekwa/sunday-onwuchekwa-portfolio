@@ -39,5 +39,11 @@ export function useNews() {
     newsItems.value = newsItems.value.filter((n) => n.id !== id)
   }
 
-  return { newsItems, loading, error, load, create, update, remove }
+  function latestNews(count = 3): NewsItem[] {
+    return [...newsItems.value]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, count)
+  }
+
+  return { newsItems, loading, error, load, create, update, remove, latestNews }
 }

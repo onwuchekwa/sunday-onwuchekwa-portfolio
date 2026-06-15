@@ -1,4 +1,4 @@
-import { normalizeInstitutionEntry } from '@/utils/cvFormat'
+import { normalizeInstitutionEntry, normalizeResearchInterestEntry } from '@/utils/cvFormat'
 
 export type CvSectionId =
   | 'researchInterests'
@@ -11,7 +11,6 @@ export type CvSectionId =
   | 'invitedEvents'
   | 'presentations'
   | 'grants'
-  | 'teaching'
   | 'skills'
 
 export interface CvSection {
@@ -61,7 +60,11 @@ export const CV_SECTION_META: CvSectionMeta[] = [
   {
     id: 'researchInterests',
     title: 'Research Interests',
-    fields: [{ key: 'text', label: 'Interest', type: 'text' }],
+    fields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'description', label: 'Description (home page Research Focus cards)', type: 'textarea' },
+      { key: 'icon', label: 'Icon (e.g. mdi-church)', type: 'text' },
+    ],
   },
   {
     id: 'education',
@@ -156,16 +159,6 @@ export const CV_SECTION_META: CvSectionMeta[] = [
     ],
   },
   {
-    id: 'teaching',
-    title: 'Teaching',
-    fields: [
-      { key: 'course', label: 'Course', type: 'text' },
-      { key: 'institution', label: 'Institution', type: 'text' },
-      { key: 'term', label: 'Term', type: 'text' },
-      { key: 'role', label: 'Role', type: 'text' },
-    ],
-  },
-  {
     id: 'skills',
     title: 'Skills',
     fields: [
@@ -201,6 +194,22 @@ export function createDefaultCvDocument(): CvDocument {
   }
 }
 
+export function entryToFormValues(
+  sectionId: CvSectionId,
+  entry: Record<string, unknown>,
+  meta: CvSectionMeta,
+): Record<string, string> {
+  const form: Record<string, string> = {}
+  for (const field of meta.fields) {
+    let value: unknown = entry[field.key]
+    if (sectionId === 'researchInterests' && field.key === 'title') {
+      value = entry.title ?? entry.text
+    }
+    form[field.key] = String(value ?? '')
+  }
+  return form
+}
+
 export function normalizeCvDocument(data: CvDocument): CvDocument {
   const metaIds = new Set(CV_SECTION_META.map((m) => m.id))
   const existingIds = new Set(data.sections.map((s) => s.id))
@@ -214,6 +223,9 @@ export function normalizeCvDocument(data: CvDocument): CvDocument {
         const normalized = normalizeCvEntry(e)
         if (section.id === 'education' || section.id === 'appointments') {
           return normalizeInstitutionEntry(normalized)
+        }
+        if (section.id === 'researchInterests') {
+          return normalizeResearchInterestEntry(normalized)
         }
         return normalized
       }),

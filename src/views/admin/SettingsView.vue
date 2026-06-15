@@ -7,7 +7,7 @@ import {
   FIRESTORE_DOC_LIMIT_BYTES,
   PROFILE_IMAGE_MAX_BYTES,
 } from '@/utils/imageToBase64'
-import { defaultSiteSettings } from '@/types/content'
+import { defaultSiteSettings, PUBLIC_PAGES } from '@/types/content'
 
 const { settings, load, save, loading } = useSiteSettings()
 const saving = ref(false)
@@ -40,6 +40,7 @@ async function handleSave() {
       profileImageUrl: settings.value.profileImageUrl ?? '',
       websiteUrl: settings.value.websiteUrl ?? '',
       phone: settings.value.phone ?? '',
+      pageVisibility: { ...defaultSiteSettings().pageVisibility, ...settings.value.pageVisibility },
     })
     snackbar.value = true
   } catch (e) {
@@ -95,6 +96,23 @@ async function handleSave() {
               :max-bytes="PROFILE_IMAGE_MAX_BYTES"
               crop-mode="portrait-face"
               hint="Large originals are auto-cropped to center your face, then compressed for Firestore."
+            />
+          </v-col>
+        </v-row>
+
+        <h2 class="text-h6 font-weight-bold mt-4 mb-1">Page Visibility</h2>
+        <p class="text-body-2 text-medium-emphasis mb-3">
+          Hidden pages are removed from the menu and show a 404 page to visitors. Pages that are
+          visible but have no content yet show an "under construction" message.
+        </p>
+        <v-row class="mb-2">
+          <v-col v-for="page in PUBLIC_PAGES" :key="page.id" cols="6" md="4" lg="2">
+            <v-switch
+              v-model="settings.pageVisibility[page.id]"
+              :label="page.title"
+              color="primary"
+              density="compact"
+              hide-details
             />
           </v-col>
         </v-row>

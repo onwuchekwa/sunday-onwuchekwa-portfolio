@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useCv } from '@/composables/useCv'
-import { CV_SECTION_META, isEntryVisible, type CvSectionId } from '@/types/cv'
+import { CV_SECTION_META, entryToFormValues, isEntryVisible, type CvSectionId } from '@/types/cv'
 
 const { cv, load, save, loading } = useCv()
 const activeTab = ref<CvSectionId>('researchInterests')
@@ -22,6 +22,11 @@ const activeMeta = computed(() =>
 
 const sectionGuidance = computed(() => {
   switch (activeTab.value) {
+    case 'researchInterests':
+      return {
+        type: 'info' as const,
+        text: 'Powers Research Focus cards on the home page, interest chips on About, and the Research Interests line on your public CV. Use Material Design Icons (e.g. mdi-church, mdi-account-group).',
+      }
     case 'education':
       return {
         type: 'info' as const,
@@ -47,11 +52,6 @@ const sectionGuidance = computed(() => {
         type: 'info' as const,
         text: 'Academic service: peer review, program committees, workshop or conference organizing, and departmental or university committees. Not volunteer work — use Volunteer Experience for that.',
       }
-    case 'teaching':
-      return {
-        type: 'warning' as const,
-        text: 'Deprecated — add TA and course instruction under Academic Experience instead. This section is hidden from the public CV by default.',
-      }
     default:
       return null
   }
@@ -71,13 +71,11 @@ function openAddEntry() {
 
 function openEditEntry(index: number) {
   const section = activeSection.value
-  if (!section) return
+  const meta = activeMeta.value
+  if (!section || !meta) return
   editingEntryIndex.value = index
   const entry = section.entries[index]
-  const { visible: _visible, ...fields } = entry
-  entryForm.value = Object.fromEntries(
-    Object.entries(fields).map(([key, value]) => [key, String(value ?? '')]),
-  )
+  entryForm.value = entryToFormValues(activeTab.value, entry, meta)
   entryVisible.value = isEntryVisible(entry)
   entryDialog.value = true
 }

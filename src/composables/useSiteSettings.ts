@@ -1,11 +1,24 @@
 import { ref } from 'vue'
 import { getSiteSettings, saveSiteSettings } from '@/firebase/firestore'
-import { defaultSiteSettings, type SiteSettings } from '@/types/content'
+import {
+  defaultPageVisibility,
+  defaultSiteSettings,
+  type SiteSettings,
+} from '@/types/content'
 
 const cache = ref<SiteSettings | null>(null)
+let loadOncePromise: Promise<SiteSettings> | null = null
+
+function mergeWithDefaults(data: Partial<SiteSettings>): SiteSettings {
+  return {
+    ...defaultSiteSettings(),
+    ...data,
+    pageVisibility: { ...defaultPageVisibility(), ...(data.pageVisibility ?? {}) },
+  }
+}
 
 export function useSiteSettings() {
-  const settings = ref<SiteSettings>(defaultSiteSettings())
+  const settings = ref<SiteSettings>(cache.value ?? defaultSiteSettings())
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -15,7 +28,7 @@ export function useSiteSettings() {
     try {
       const data = await getSiteSettings()
       if (data) {
-        const merged = { ...defaultSiteSettings(), ...data }
+        const merged = mergeWithDefaults(data)
         settings.value = merged
         cache.value = merged
       }
@@ -37,4 +50,22 @@ export function useSiteSettings() {
 
 export function getCachedSiteSettings(): SiteSettings {
   return cache.value ?? defaultSiteSettings()
+}
+
+/** Load settings once (cached) — used by the router guard for page visibility. */
+export async function loadSiteSettingsOnce(): Promise<SiteSettings> {
+  if (cache.value) return cache.value
+  if (!loadOncePromise) {
+    loadOncePromise = getSiteSettings()
+      .then((data) => {
+        const merged = data ? mergeWithDefaults(data) : defaultSiteSettings()
+        cache.value = merged
+        return merged
+      })
+      .catch(() => {
+        loadOncePromise = null
+        return defaultSiteSettings()
+      })
+  }
+  return loadOncePromise
 }

@@ -1,9 +1,17 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useNews } from '@/composables/useNews'
 import NewsCard from '@/components/NewsCard.vue'
+import UnderConstruction from '@/components/UnderConstruction.vue'
 
-const { newsItems, load, loading } = useNews()
+const { newsItems, load, loading, error } = useNews()
+const route = useRoute()
+const router = useRouter()
+
+watch(error, (e) => {
+  if (e) router.replace({ name: 'error', query: { code: '503', from: route.fullPath } })
+})
 
 onMounted(() => load(true))
 </script>
@@ -23,8 +31,9 @@ onMounted(() => load(true))
       </v-col>
     </v-row>
 
-    <v-alert v-else-if="!loading" type="info" variant="tonal">
-      No news posts yet. Check back soon.
-    </v-alert>
+    <UnderConstruction
+      v-else-if="!loading"
+      title="The News page is under construction"
+    />
   </v-container>
 </template>

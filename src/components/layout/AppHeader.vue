@@ -1,17 +1,25 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useSiteSettings } from '@/composables/useSiteSettings'
+import { PUBLIC_PAGES } from '@/types/content'
 import ProfileAvatar from '@/components/ProfileAvatar.vue'
 
 const { settings, load } = useSiteSettings()
 
-const navLinks = [
-  { title: 'About', to: '/about' },
-  { title: 'Publications', to: '/publications' },
-  { title: 'News', to: '/news' },
-  { title: 'CV', to: '/cv' },
-  { title: 'Contact', to: '/contact' },
-]
+const pageRoutes = {
+  about: '/about',
+  publications: '/publications',
+  news: '/news',
+  cv: '/cv',
+  contact: '/contact',
+} as const
+
+const navLinks = computed(() =>
+  PUBLIC_PAGES.filter((page) => settings.value.pageVisibility[page.id] !== false).map((page) => ({
+    title: page.title,
+    to: pageRoutes[page.id],
+  })),
+)
 
 onMounted(load)
 </script>
@@ -42,19 +50,21 @@ onMounted(load)
         </v-btn>
       </div>
 
-      <v-menu class="d-md-none">
-        <template #activator="{ props }">
-          <v-btn icon="mdi-menu" variant="text" color="white" v-bind="props" />
-        </template>
-        <v-list>
-          <v-list-item
-            v-for="link in navLinks"
-            :key="link.to"
-            :to="link.to"
-            :title="link.title"
-          />
-        </v-list>
-      </v-menu>
+      <div class="d-md-none">
+        <v-menu>
+          <template #activator="{ props }">
+            <v-btn icon="mdi-menu" variant="text" color="white" v-bind="props" />
+          </template>
+          <v-list>
+            <v-list-item
+              v-for="link in navLinks"
+              :key="link.to"
+              :to="link.to"
+              :title="link.title"
+            />
+          </v-list>
+        </v-menu>
+      </div>
     </v-container>
   </v-app-bar>
 </template>
