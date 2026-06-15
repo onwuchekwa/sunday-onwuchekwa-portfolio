@@ -67,7 +67,13 @@ async function handleSave() {
             <v-text-field v-model="settings.title" label="Title / Affiliation" required />
           </v-col>
           <v-col cols="12">
-            <v-text-field v-model="settings.tagline" label="Tagline" />
+            <v-textarea
+              v-model="settings.tagline"
+              label="Site description"
+              rows="3"
+              hint="Shown on the home page hero and used as the meta description for search engines."
+              persistent-hint
+            />
           </v-col>
           <v-col cols="12" md="6">
             <v-text-field v-model="settings.email" label="Email" type="email" required />

@@ -33,15 +33,17 @@ onMounted(async () => {
       <v-container>
         <v-row align="center">
           <v-col cols="12" md="8">
-            <h1 class="text-h2 text-md-h1 font-weight-bold text-primary mb-3">
-              {{ settings.name }}
-            </h1>
-            <p class="text-h6 text-md-h5 text-body-readable mb-4 hero-title">
-              {{ settings.title }}
-            </p>
-            <p class="hero-tagline text-body-1 mb-8">
-              {{ settings.tagline }}
-            </p>
+            <div class="hero-intro">
+              <h1 class="text-h2 text-md-h1 font-weight-bold text-primary mb-3">
+                {{ settings.name }}
+              </h1>
+              <p class="text-h6 text-md-h5 text-body-readable mb-4 hero-title">
+                {{ settings.title }}
+              </p>
+              <p class="hero-tagline text-body-1 mb-8">
+                {{ settings.tagline }}
+              </p>
+            </div>
             <div class="d-flex flex-wrap ga-3 hero-actions">
               <v-btn to="/about" color="primary" variant="flat" size="large" prepend-icon="mdi-account">
                 About me
@@ -164,6 +166,10 @@ onMounted(async () => {
   background: linear-gradient(135deg, #ffffff 0%, rgba(189, 214, 230, 0.2) 100%);
 }
 
+.hero-intro {
+  width: 100%;
+}
+
 .hero-title {
   font-weight: 500;
   line-height: 1.5;
@@ -171,11 +177,13 @@ onMounted(async () => {
 
 .hero-tagline {
   color: var(--byu-royal);
-  font-weight: 600;
-  line-height: 1.6;
+  font-weight: 500;
+  line-height: 1.7;
   padding-left: 1rem;
   border-left: 4px solid var(--byu-royal);
-  max-width: 36rem;
+  width: 100%;
+  max-width: none;
+  text-align: left;
 }
 
 .hero-actions .v-btn {

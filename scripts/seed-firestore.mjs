@@ -23,9 +23,10 @@ console.log(`Using Firebase project: ${serviceAccount.project_id}`)
 console.log('Seeding Firestore collections...\n')
 
 const siteSettings = {
-  name: 'Sunday Onwuchekwa',
-  title: 'PhD Student, Computer Science · Brigham Young University',
-  tagline: 'Human-Computer Interaction · Human-Centered Computing · Religion & Technology',
+  name: 'Sunday O. Onwuchekwa',
+  title: 'PhD Student in Computer Science | HCI & Human-Centered Computing Researcher',
+  tagline:
+    'I investigate how technology shapes human experiences, communities, and spiritual practices. Through qualitative and participatory approaches, I seek to design sociotechnical systems that are inclusive, culturally responsive, and supportive of human flourishing.',
   email: 'sunday.onwuchekwa@byu.edu',
   phone: '',
   websiteUrl: 'https://sunday-onwuchekwa.web.app',

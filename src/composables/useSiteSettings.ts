@@ -5,6 +5,7 @@ import {
   defaultSiteSettings,
   type SiteSettings,
 } from '@/types/content'
+import { applySiteHead } from '@/utils/siteHead'
 
 const cache = ref<SiteSettings | null>(null)
 let loadOncePromise: Promise<SiteSettings> | null = null
@@ -31,6 +32,7 @@ export function useSiteSettings() {
         const merged = mergeWithDefaults(data)
         settings.value = merged
         cache.value = merged
+        applySiteHead(merged)
       }
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to load settings'
@@ -43,6 +45,7 @@ export function useSiteSettings() {
     await saveSiteSettings(data)
     settings.value = data
     cache.value = data
+    applySiteHead(data)
   }
 
   return { settings, loading, error, load, save }
@@ -60,6 +63,7 @@ export async function loadSiteSettingsOnce(): Promise<SiteSettings> {
       .then((data) => {
         const merged = data ? mergeWithDefaults(data) : defaultSiteSettings()
         cache.value = merged
+        applySiteHead(merged)
         return merged
       })
       .catch(() => {
