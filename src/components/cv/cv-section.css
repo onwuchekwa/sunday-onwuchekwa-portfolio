@@ -50,7 +50,8 @@
   padding-left: 0.15rem;
 }
 
-.cv-research-interests .cv-paragraph {
+.cv-research-interests .cv-paragraph,
+.cv-certificates .cv-paragraph {
   font-style: italic;
   color: rgba(0, 0, 0, 0.82);
 }

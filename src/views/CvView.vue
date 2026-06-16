@@ -6,6 +6,7 @@ import { useSiteSettings } from '@/composables/useSiteSettings'
 import { usePublications } from '@/composables/usePublications'
 import CvHeader from '@/components/cv/CvHeader.vue'
 import CvResearchInterests from '@/components/cv/CvResearchInterests.vue'
+import CvCertificates from '@/components/cv/CvCertificates.vue'
 import CvEducation from '@/components/cv/CvEducation.vue'
 import CvExperience from '@/components/cv/CvExperience.vue'
 import CvIndustryExperience from '@/components/cv/CvIndustryExperience.vue'
@@ -16,6 +17,7 @@ import UnderConstruction from '@/components/UnderConstruction.vue'
 import { usePdfExport } from '@/composables/usePdfExport'
 import type { CvSectionId } from '@/types/cv'
 import { isEntryVisible } from '@/types/cv'
+import { sortEducationEntries, sortExperienceEntries } from '@/utils/cvFormat'
 
 const { cv, load: loadCv, visibleSections, visibleEntries, sectionHasVisibleEntries, loading, error: cvError } =
   useCv()
@@ -40,6 +42,7 @@ const publicSections = computed(() =>
 
 type RenderedSection =
   | { kind: 'research'; entries: Record<string, unknown>[] }
+  | { kind: 'certificates'; entries: Record<string, unknown>[] }
   | { kind: 'education'; entries: Record<string, unknown>[] }
   | { kind: 'experience'; entries: Record<string, unknown>[]; title: string }
   | { kind: 'industry'; entries: Record<string, unknown>[]; title: string }
@@ -57,13 +60,15 @@ const renderedSections = computed<RenderedSection[]>(() =>
       switch (section.id as CvSectionId) {
         case 'researchInterests':
           return { kind: 'research' as const, entries }
+        case 'certificates':
+          return { kind: 'certificates' as const, entries }
         case 'education':
-          return { kind: 'education' as const, entries }
+          return { kind: 'education' as const, entries: sortEducationEntries(entries) }
         case 'appointments':
-          return { kind: 'experience' as const, entries, title: section.title }
+          return { kind: 'experience' as const, entries: sortExperienceEntries(entries), title: section.title }
         case 'industryExperience':
         case 'volunteerExperience':
-          return { kind: 'industry' as const, entries, title: section.title }
+          return { kind: 'industry' as const, entries: sortExperienceEntries(entries), title: section.title }
         case 'awards':
         case 'service':
         case 'invitedEvents':
@@ -133,6 +138,10 @@ onMounted(async () => {
         <template v-for="(section, index) in renderedSections" :key="index">
           <CvResearchInterests
             v-if="section.kind === 'research'"
+            :entries="section.entries"
+          />
+          <CvCertificates
+            v-else-if="section.kind === 'certificates'"
             :entries="section.entries"
           />
           <CvEducation

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatExperienceDates } from '@/utils/cvFormat'
 import CvSectionHeading from '@/components/cv/CvSectionHeading.vue'
 import CvEntryBlock from '@/components/cv/CvEntryBlock.vue'
 
@@ -17,7 +18,7 @@ defineProps<{
       variant="experience"
       :primary="String(entry.role ?? '')"
       :secondary="String(entry.company ?? '')"
-      :dates="String(entry.dates ?? '')"
+      :dates="formatExperienceDates(String(entry.dates ?? ''))"
       :location="String(entry.location ?? '')"
       :details="entry.details"
     />

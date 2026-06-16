@@ -11,6 +11,7 @@ export type CvSectionId =
   | 'invitedEvents'
   | 'presentations'
   | 'grants'
+  | 'certificates'
   | 'skills'
 
 export interface CvSection {
@@ -36,6 +37,15 @@ export interface CvSectionMeta {
 /** Per-entry flag: hidden from public CV when false. Defaults to true when missing. */
 export function isEntryVisible(entry: Record<string, unknown>): boolean {
   return entry.visible !== false
+}
+
+/** Per-entry flag: hidden from About page education when false. Defaults to true when missing. */
+export function isAboutEntryVisible(entry: Record<string, unknown>): boolean {
+  return entry.showOnAbout !== false
+}
+
+function normalizeEducationEntry(entry: Record<string, unknown>): Record<string, unknown> {
+  return { ...normalizeInstitutionEntry(entry), showOnAbout: isAboutEntryVisible(entry) }
 }
 
 const LEGACY_SECTION_TITLES: Partial<Record<CvSectionId, string[]>> = {
@@ -73,7 +83,7 @@ export const CV_SECTION_META: CvSectionMeta[] = [
       { key: 'degree', label: 'Degree', type: 'text' },
       { key: 'institution', label: 'Institution', type: 'text' },
       { key: 'location', label: 'Location', type: 'text' },
-      { key: 'year', label: 'Year / Dates', type: 'text' },
+      { key: 'year', label: 'End date', type: 'text' },
       { key: 'details', label: 'Details (one bullet per line)', type: 'textarea' },
     ],
   },
@@ -159,6 +169,11 @@ export const CV_SECTION_META: CvSectionMeta[] = [
     ],
   },
   {
+    id: 'certificates',
+    title: 'Certificates',
+    fields: [{ key: 'name', label: 'Certificate name', type: 'text' }],
+  },
+  {
     id: 'skills',
     title: 'Skills',
     fields: [
@@ -221,7 +236,10 @@ export function normalizeCvDocument(data: CvDocument): CvDocument {
       title: resolveSectionTitle(section, meta),
       entries: section.entries.map((e) => {
         const normalized = normalizeCvEntry(e)
-        if (section.id === 'education' || section.id === 'appointments') {
+        if (section.id === 'education') {
+          return normalizeEducationEntry(normalized)
+        }
+        if (section.id === 'appointments') {
           return normalizeInstitutionEntry(normalized)
         }
         if (section.id === 'researchInterests') {

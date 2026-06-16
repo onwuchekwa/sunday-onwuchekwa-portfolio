@@ -4,8 +4,205 @@ import {
   resolvePublicationCvCategory,
   type PublicationCvCategory,
 } from '@/types/content'
+import { isAboutEntryVisible } from '@/types/cv'
 
 const JOURNAL_MODEL_MARKER = 'ᐩ'
+
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
+
+const MONTH_ALIASES: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+}
+
+export interface ParsedDateRange {
+  start: number
+  end: number
+  isCurrent: boolean
+  startLabel: string
+  endLabel: string
+}
+
+export interface ParsedMonthYear {
+  sortKey: number
+  label: string
+}
+
+function currentSortKey(): number {
+  const now = new Date()
+  return now.getFullYear() * 100 + (now.getMonth() + 1)
+}
+
+function resolveMonthNumber(monthPart: string): number {
+  const normalized = monthPart.replace(/\./g, '').trim().toLowerCase()
+  if (!normalized) return 1
+
+  if (MONTH_ALIASES[normalized]) return MONTH_ALIASES[normalized]
+
+  const short = normalized.slice(0, 3)
+  for (const [alias, month] of Object.entries(MONTH_ALIASES)) {
+    if (alias.startsWith(short) || short === alias.slice(0, 3)) {
+      return month
+    }
+  }
+
+  return 1
+}
+
+export function parseMonthYearToken(token: string): ParsedMonthYear {
+  const cleaned = token.trim()
+  if (!cleaned) {
+    return { sortKey: 0, label: '' }
+  }
+
+  if (/^present$/i.test(cleaned.replace(/\./g, ''))) {
+    return { sortKey: currentSortKey(), label: '' }
+  }
+
+  const yearMatch = cleaned.match(/\b(19|20)\d{2}\b/)
+  if (!yearMatch) {
+    return { sortKey: 0, label: cleaned }
+  }
+
+  const year = Number(yearMatch[0])
+  const monthPart = cleaned.replace(yearMatch[0], '').trim()
+  const month = resolveMonthNumber(monthPart)
+  return {
+    sortKey: year * 100 + month,
+    label: `${MONTH_LABELS[month - 1]} ${year}`,
+  }
+}
+
+function splitDateRange(value: string): { startToken: string; endToken: string; isCurrent: boolean } {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return { startToken: '', endToken: '', isCurrent: false }
+  }
+
+  const parts = trimmed.split(/\s*[–-]\s*|\s+to\s+/i).map((part) => part.trim()).filter(Boolean)
+  if (parts.length >= 2) {
+    const endToken = parts[parts.length - 1]
+    const isCurrent = /present/i.test(endToken)
+    return { startToken: parts[0], endToken, isCurrent }
+  }
+
+  const isCurrent = /present/i.test(trimmed)
+  return { startToken: trimmed, endToken: trimmed, isCurrent }
+}
+
+export function parseExperienceDateRange(dates: string): ParsedDateRange {
+  const { startToken, endToken, isCurrent } = splitDateRange(dates)
+  const start = parseMonthYearToken(startToken)
+  const end = isCurrent ? { sortKey: currentSortKey(), label: '' } : parseMonthYearToken(endToken)
+
+  return {
+    start: start.sortKey,
+    end: isCurrent ? currentSortKey() : end.sortKey,
+    isCurrent,
+    startLabel: start.label,
+    endLabel: end.label,
+  }
+}
+
+function parseEducationDateRange(year: string): ParsedDateRange {
+  return parseExperienceDateRange(year)
+}
+
+export function parseEducationEndDate(year: string): number {
+  const range = parseEducationDateRange(year)
+  const { endToken, startToken } = splitDateRange(year)
+
+  if (/present/i.test(year)) {
+    if (/present/i.test(endToken)) {
+      const start = parseMonthYearToken(startToken)
+      const hasMonth = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(startToken)
+      if (hasMonth && start.sortKey) return start.sortKey
+      return currentSortKey()
+    }
+    const anticipated = parseMonthYearToken(endToken)
+    return anticipated.sortKey || currentSortKey()
+  }
+
+  return range.end || range.start
+}
+
+export function formatExperienceDates(dates: string): string {
+  const raw = dates.trim()
+  if (!raw) return ''
+
+  const { startToken, endToken, isCurrent } = splitDateRange(raw)
+  const start = parseMonthYearToken(startToken)
+
+  if (isCurrent) {
+    return start.label ? `${start.label} – Present` : 'Present'
+  }
+
+  const end = parseMonthYearToken(endToken)
+  if (start.label && end.label) return `${start.label} – ${end.label}`
+  return start.label || end.label || raw
+}
+
+function isEducationInProgress(year: string): boolean {
+  if (/present/i.test(year)) return true
+  return parseEducationEndDate(year) >= currentSortKey()
+}
+
+export function formatEducationYear(year: string): string {
+  const raw = year.trim()
+  if (!raw) return ''
+
+  const { endToken } = splitDateRange(raw)
+  const end = parseMonthYearToken(endToken)
+
+  if (isEducationInProgress(raw)) {
+    const label =
+      end.label ||
+      parseMonthYearToken(raw.replace(/present/gi, '').trim()).label ||
+      `${MONTH_LABELS[new Date().getMonth()]} ${new Date().getFullYear()}`
+    return `Anticipated: ${label}`
+  }
+
+  return end.label || raw
+}
+
+export function sortExperienceEntries(entries: Record<string, unknown>[]): Record<string, unknown>[] {
+  return [...entries].sort((a, b) => {
+    const left = parseExperienceDateRange(String(a.dates ?? ''))
+    const right = parseExperienceDateRange(String(b.dates ?? ''))
+    if (left.isCurrent !== right.isCurrent) {
+      return left.isCurrent ? -1 : 1
+    }
+    return right.start - left.start
+  })
+}
+
+export function sortEducationEntries(entries: Record<string, unknown>[]): Record<string, unknown>[] {
+  return [...entries].sort(
+    (a, b) => parseEducationEndDate(String(b.year ?? '')) - parseEducationEndDate(String(a.year ?? '')),
+  )
+}
 
 export function splitDetailLines(details: unknown): string[] {
   if (!details) return []
@@ -41,11 +238,12 @@ export function splitInstitutionAndLocation(
 
 export function resolveEducationDisplay(entry: Record<string, unknown>) {
   const { institution, location } = splitInstitutionAndLocation(entry.institution, entry.location)
+  const rawYear = String(entry.year ?? '').trim()
   return {
     institution,
     location,
     degree: String(entry.degree ?? '').trim(),
-    year: String(entry.year ?? '').trim(),
+    year: formatEducationYear(rawYear),
     details: entry.details,
   }
 }
@@ -69,7 +267,7 @@ export function resolveExperienceDisplay(
   return {
     primary: String(entry.role ?? '').trim(),
     secondary: institution,
-    dates: String(entry.dates ?? '').trim(),
+    dates: formatExperienceDates(String(entry.dates ?? '')),
     location,
     details: entry.details,
   }
@@ -112,6 +310,26 @@ export function formatResearchInterests(entries: Record<string, unknown>[]): str
     .map((e) => resolveResearchInterestTitle(e))
     .filter(Boolean)
     .join(', ')
+}
+
+export function formatCertificates(entries: Record<string, unknown>[]): string {
+  return entries
+    .map((e) => String(e.name ?? '').trim())
+    .filter(Boolean)
+    .join(' | ')
+}
+
+export function selectAboutEducationEntries(
+  entries: Record<string, unknown>[],
+  max = 4,
+): Record<string, unknown>[] {
+  return [...entries]
+    .filter(isAboutEntryVisible)
+    .sort(
+      (a, b) =>
+        parseEducationEndDate(String(b.year ?? '')) - parseEducationEndDate(String(a.year ?? '')),
+    )
+    .slice(0, max)
 }
 
 export function formatAwardEntry(entry: Record<string, unknown>): string {

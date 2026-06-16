@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import { useAbout } from '@/composables/useAbout'
 import { useCv } from '@/composables/useCv'
-import { splitDetailLines, resolveResearchInterestTitle } from '@/utils/cvFormat'
+import { splitDetailLines, resolveResearchInterestTitle, resolveEducationDisplay, selectAboutEducationEntries } from '@/utils/cvFormat'
 import ProfileAvatar from '@/components/ProfileAvatar.vue'
 import UnderConstruction from '@/components/UnderConstruction.vue'
 
@@ -37,15 +37,18 @@ interface EducationDisplay {
 
 /** Education comes from the CV (single source); legacy about doc is the fallback. */
 const education = computed<EducationDisplay[]>(() => {
-  const fromCv = cvSectionEntries('education').map((e) => ({
-    degree: String(e.degree ?? '').trim(),
-    institution: [e.institution, e.location]
-      .map((v) => String(v ?? '').trim())
-      .filter(Boolean)
-      .join(', '),
-    year: String(e.year ?? '').trim(),
-    detailLines: splitDetailLines(e.details),
-  }))
+  const fromCv = selectAboutEducationEntries(cvSectionEntries('education')).map((e) => {
+    const display = resolveEducationDisplay(e)
+    return {
+      degree: display.degree,
+      institution: [display.institution, display.location]
+        .map((v) => v.trim())
+        .filter(Boolean)
+        .join(', '),
+      year: display.year,
+      detailLines: splitDetailLines(display.details),
+    }
+  })
   if (fromCv.length) return fromCv
   return about.value.education.map((edu) => ({
     degree: edu.degree,

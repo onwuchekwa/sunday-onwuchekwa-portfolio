@@ -192,17 +192,19 @@ const cv = {
           degree: 'Ph.D. in Computer Science',
           institution: 'Brigham Young University',
           location: 'Provo, UT',
-          year: '2024 – Present',
+          year: 'Jun 2028',
           details: 'Focus: HCI, Religion & Technology',
           visible: true,
+          showOnAbout: true,
         },
         {
           degree: 'B.S. in Computer Science',
           institution: 'Brigham Young University',
           location: 'Provo, UT',
-          year: '2018 – 2022',
+          year: 'Jun 2022',
           details: 'Minor: Design Thinking',
           visible: true,
+          showOnAbout: true,
         },
       ],
     },
@@ -391,10 +393,30 @@ const cv = {
       ],
     },
     {
+      id: 'certificates',
+      title: 'Certificates',
+      visible: false,
+      order: 10,
+      entries: [
+        {
+          name: 'CITI Human Subjects Research',
+          visible: true,
+        },
+        {
+          name: 'Google UX Design Certificate',
+          visible: true,
+        },
+        {
+          name: 'AWS Cloud Practitioner',
+          visible: true,
+        },
+      ],
+    },
+    {
       id: 'skills',
       title: 'Skills',
       visible: true,
-      order: 10,
+      order: 11,
       entries: [
         {
           category: 'Research Methods',
