@@ -73,15 +73,15 @@ export const PUBLICATION_CV_CATEGORIES: {
   { value: 'technology_demonstration', title: 'Technology Demonstration (Archived Abstract)', order: 2 },
   {
     value: 'workshop_extended_abstract',
-    title: 'Archived Extended Abstracts for Workshops Organized',
+    title: 'Extended Abstracts for Workshops',
     order: 3,
   },
   {
     value: 'poster_extended_abstract',
-    title: 'Archived Extended Abstracts (and presented as posters)',
+    title: 'Extended Abstracts (and presented as posters)',
     order: 4,
   },
-  { value: 'archived_abstract', title: 'Archived Abstracts (and presented as posters)', order: 5 },
+  { value: 'archived_abstract', title: 'Extended Abstracts (and yet to be presented as posters)', order: 5 },
 ]
 
 export function defaultCvCategoryForType(type: PublicationType): PublicationCvCategory {
