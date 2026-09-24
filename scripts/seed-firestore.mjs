@@ -75,7 +75,11 @@ I draw on qualitative methods including ethnography, interviews, and participato
 const publications = [
   {
     title: 'Designing for Faith: Technology Adoption in Religious Communities',
-    authors: 'Sunday Onwuchekwa, Jane Smith, John Doe',
+    authors: [
+      { name: 'Sunday O. Onwuchekwa', bold: true },
+      { name: 'Jane Smith', bold: false },
+      { name: 'John Doe', bold: false },
+    ],
     venue: 'Proceedings of the ACM Conference on Human Factors in Computing Systems',
     year: 2025,
     type: 'paper',
@@ -95,7 +99,10 @@ const publications = [
   },
   {
     title: 'Prayer Apps and Privacy: A Participatory Design Study',
-    authors: 'Sunday Onwuchekwa, Alice Johnson',
+    authors: [
+      { name: 'Sunday O. Onwuchekwa', bold: true },
+      { name: 'Alice Johnson', bold: false },
+    ],
     venue: 'Proceedings of the ACM on Human-Computer Interaction',
     year: 2024,
     type: 'poster',
@@ -113,7 +120,7 @@ const publications = [
   },
   {
     title: 'Community Privacy Practices in Mobile Worship Apps',
-    authors: 'Sunday Onwuchekwa',
+    authors: [{ name: 'Sunday O. Onwuchekwa', bold: true }],
     venue: 'Extended Abstracts of the USENIX Symposium on Usable Privacy and Security',
     year: 2023,
     type: 'poster',

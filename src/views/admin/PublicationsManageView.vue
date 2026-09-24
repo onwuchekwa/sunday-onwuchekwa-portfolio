@@ -2,6 +2,8 @@
 import { onMounted, ref, watch } from 'vue'
 import { usePublications } from '@/composables/usePublications'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
+import AuthorList from '@/components/AuthorList.vue'
+import { normalizeAuthors } from '@/utils/cvFormat'
 import { PUBLICATION_THUMBNAIL_MAX_BYTES } from '@/utils/imageToBase64'
 import {
   defaultCvCategoryForType,
@@ -18,7 +20,7 @@ const saving = ref(false)
 
 const emptyForm = (): Omit<Publication, 'id'> => ({
   title: '',
-  authors: '',
+  authors: [{ name: '', bold: false }],
   venue: '',
   year: new Date().getFullYear(),
   type: 'paper',
@@ -38,6 +40,7 @@ const emptyForm = (): Omit<Publication, 'id'> => ({
 })
 
 const form = ref(emptyForm())
+const authorError = ref('')
 
 const cvCategoryItems = PUBLICATION_CV_CATEGORIES.map((c) => ({
   title: c.title,
@@ -70,6 +73,7 @@ function categoryLabel(value?: PublicationCvCategory): string {
 function openCreate() {
   editingId.value = null
   form.value = emptyForm()
+  authorError.value = ''
   dialog.value = true
 }
 
@@ -77,7 +81,7 @@ function openEdit(pub: Publication) {
   editingId.value = pub.id ?? null
   form.value = {
     title: pub.title,
-    authors: pub.authors,
+    authors: normalizeAuthors(pub.authors).map((author) => ({ ...author })),
     venue: pub.venue,
     year: pub.year,
     type: pub.type,
@@ -95,16 +99,43 @@ function openEdit(pub: Publication) {
     sourceUrl: pub.sourceUrl ?? '',
     createdAt: pub.createdAt ?? new Date().toISOString(),
   }
+  if (!form.value.authors.length) {
+    form.value.authors.push({ name: '', bold: false })
+  }
+  authorError.value = ''
   dialog.value = true
 }
 
+function addAuthor() {
+  form.value.authors.push({ name: '', bold: false })
+}
+
+function removeAuthor(index: number) {
+  form.value.authors.splice(index, 1)
+}
+
+function moveAuthor(index: number, direction: -1 | 1) {
+  const target = index + direction
+  const authors = form.value.authors
+  if (target < 0 || target >= authors.length) return
+  ;[authors[index], authors[target]] = [authors[target], authors[index]]
+}
+
 async function handleSave() {
+  const authors = normalizeAuthors(form.value.authors)
+  if (!authors.length) {
+    authorError.value = 'Add at least one author.'
+    return
+  }
+  authorError.value = ''
+
   saving.value = true
   try {
+    const payload = { ...form.value, authors }
     if (editingId.value) {
-      await update(editingId.value, form.value)
+      await update(editingId.value, payload)
     } else {
-      await create(form.value)
+      await create(payload)
     }
     dialog.value = false
   } finally {
@@ -161,7 +192,62 @@ async function toggleCv(id: string, current: boolean) {
         </h2>
         <v-form @submit.prevent="handleSave">
           <v-text-field v-model="form.title" label="Title" required class="mb-2" />
-          <v-text-field v-model="form.authors" label="Authors" required class="mb-2" />
+          <div class="mb-4">
+            <h3 class="text-subtitle-1 font-weight-bold mb-2">Authors</h3>
+            <div
+              v-for="(author, index) in form.authors"
+              :key="index"
+              class="d-flex align-center ga-2 mb-2"
+            >
+              <v-text-field
+                v-model="author.name"
+                :label="`Author ${index + 1}`"
+                density="compact"
+                hide-details
+                class="flex-grow-1"
+              />
+              <v-switch
+                v-model="author.bold"
+                label="Bold"
+                color="primary"
+                density="compact"
+                hide-details
+                class="flex-grow-0"
+              />
+              <v-btn
+                icon="mdi-arrow-up"
+                variant="text"
+                size="small"
+                :disabled="index === 0"
+                aria-label="Move author up"
+                @click="moveAuthor(index, -1)"
+              />
+              <v-btn
+                icon="mdi-arrow-down"
+                variant="text"
+                size="small"
+                :disabled="index === form.authors.length - 1"
+                aria-label="Move author down"
+                @click="moveAuthor(index, 1)"
+              />
+              <v-btn
+                icon="mdi-delete"
+                variant="text"
+                size="small"
+                color="error"
+                :disabled="form.authors.length === 1"
+                aria-label="Remove author"
+                @click="removeAuthor(index)"
+              />
+            </div>
+            <v-btn variant="tonal" size="small" prepend-icon="mdi-plus" @click="addAuthor">
+              Add author
+            </v-btn>
+            <p class="text-body-2 text-medium-emphasis mt-3 mb-0">
+              Preview: <AuthorList :authors="form.authors" />
+            </p>
+            <p v-if="authorError" class="text-error text-body-2 mt-1 mb-0">{{ authorError }}</p>
+          </div>
           <v-text-field v-model="form.venue" label="Venue" required class="mb-2" />
           <v-row>
             <v-col cols="6">

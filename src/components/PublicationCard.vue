@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Publication } from '@/types/content'
+import AuthorList from '@/components/AuthorList.vue'
 
 const props = defineProps<{
   publication: Publication
@@ -61,7 +62,9 @@ const statusLabel = computed(() => {
           <span v-else>{{ publication.title }}</span>
         </h3>
 
-        <p class="text-body-2 text-medium-emphasis mb-1">{{ publication.authors }}</p>
+        <p class="text-body-2 text-medium-emphasis mb-1">
+          <AuthorList :authors="publication.authors" />
+        </p>
         <p v-if="publication.venue" class="text-body-2 font-italic mb-3">{{ publication.venue }}</p>
 
         <p

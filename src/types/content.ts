@@ -107,10 +107,15 @@ export interface PublicationLinks {
   arxiv?: string
 }
 
+export interface PublicationAuthor {
+  name: string
+  bold: boolean
+}
+
 export interface Publication {
   id?: string
   title: string
-  authors: string
+  authors: PublicationAuthor[]
   venue: string
   year: number
   type: PublicationType

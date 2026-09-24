@@ -14,6 +14,7 @@ import {
 import { getFirebaseDb } from './config'
 import type { About, NewsItem, Publication, SiteSettings } from '@/types/content'
 import type { CvDocument } from '@/types/cv'
+import { normalizeAuthors } from '@/utils/cvFormat'
 
 const db = () => getFirebaseDb()
 
@@ -38,7 +39,10 @@ export async function saveAbout(data: About): Promise<void> {
 export async function getPublications(): Promise<Publication[]> {
   const q = query(collection(db(), 'publications'), orderBy('year', 'desc'))
   const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Publication))
+  return snap.docs.map((d) => {
+    const data = d.data()
+    return { id: d.id, ...data, authors: normalizeAuthors(data.authors) } as Publication
+  })
 }
 
 export async function addPublication(data: Omit<Publication, 'id'>): Promise<string> {

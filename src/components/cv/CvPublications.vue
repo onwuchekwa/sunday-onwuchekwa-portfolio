@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import {
   CV_PUBLICATION_FOOTNOTES,
-  formatPublicationCitation,
+  formatPublicationCitationParts,
   type PublicationCategoryGroup,
 } from '@/utils/cvFormat'
+import AuthorList from '@/components/AuthorList.vue'
 import CvSectionHeading from '@/components/cv/CvSectionHeading.vue'
 
 defineProps<{
@@ -38,7 +39,7 @@ defineProps<{
         :key="pub.id"
         class="cv-pub-entry"
       >
-        {{ formatPublicationCitation(pub) }}
+        <AuthorList :authors="pub.authors" /> {{ formatPublicationCitationParts(pub).rest }}
       </div>
     </template>
   </section>

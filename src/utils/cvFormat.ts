@@ -1,4 +1,4 @@
-import type { Publication } from '@/types/content'
+import type { Publication, PublicationAuthor } from '@/types/content'
 import {
   PUBLICATION_CV_CATEGORIES,
   resolvePublicationCvCategory,
@@ -380,7 +380,64 @@ export function formatSimpleEntry(entry: Record<string, unknown>, sectionId: str
   }
 }
 
-export function formatPublicationCitation(pub: Publication): string {
+const OWNER_AUTHOR_PATTERN = /^Sunday\s+(?:O\.?\s+)?Onwuchekwa$/i
+
+export interface AuthorSegment {
+  text: string
+  bold: boolean
+}
+
+function splitLegacyAuthors(value: string): string[] {
+  return value
+    .split(/\s*,\s*(?:and\s+|&\s*)?|\s+(?:and|&)\s+/i)
+    .map((name) => name.trim())
+    .filter(Boolean)
+}
+
+export function normalizeAuthors(value: unknown): PublicationAuthor[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((author) => {
+        if (typeof author === 'string') {
+          const name = author.trim()
+          return { name, bold: OWNER_AUTHOR_PATTERN.test(name) }
+        }
+        const record = (author ?? {}) as Record<string, unknown>
+        return { name: String(record.name ?? '').trim(), bold: record.bold === true }
+      })
+      .filter((author) => author.name)
+  }
+
+  if (typeof value === 'string') {
+    return splitLegacyAuthors(value).map((name) => ({ name, bold: OWNER_AUTHOR_PATTERN.test(name) }))
+  }
+
+  return []
+}
+
+export function formatAuthorSegments(authors: PublicationAuthor[]): AuthorSegment[] {
+  const named = authors.filter((author) => author.name.trim())
+  const segments: AuthorSegment[] = []
+
+  named.forEach((author, index) => {
+    if (index > 0) {
+      const isLast = index === named.length - 1
+      const separator = !isLast ? ', ' : named.length === 2 ? ' and ' : ', and '
+      segments.push({ text: separator, bold: false })
+    }
+    segments.push({ text: author.name.trim(), bold: author.bold })
+  })
+
+  return segments
+}
+
+export function formatAuthorNames(authors: PublicationAuthor[]): string {
+  return formatAuthorSegments(authors)
+    .map((segment) => segment.text)
+    .join('')
+}
+
+export function formatPublicationCitationParts(pub: Publication): { rest: string } {
   const category = resolvePublicationCvCategory(pub)
   const journalMarker =
     pub.isJournalModel || category === 'journal_article' ? ` ${JOURNAL_MODEL_MARKER}` : ''
@@ -388,8 +445,14 @@ export function formatPublicationCitation(pub: Publication): string {
   const venue = pub.venue ? `${pub.venue}${journalMarker}` : ''
   const yearPart = pub.year ? String(pub.year) : ''
   const tail = [pub.cvStatus, pub.acceptanceRate, pub.scholarNote].filter(Boolean).join(', ')
-  const base = [pub.authors, title, venue, yearPart].filter(Boolean).join(' ')
-  return tail ? `${base} (${tail})` : base
+  const base = [title, venue, yearPart].filter(Boolean).join(' ')
+  return { rest: tail ? `${base} (${tail})` : base }
+}
+
+export function formatPublicationCitation(pub: Publication): string {
+  const authors = formatAuthorNames(normalizeAuthors(pub.authors))
+  const { rest } = formatPublicationCitationParts(pub)
+  return [authors, rest].filter(Boolean).join(' ')
 }
 
 export interface PublicationCategoryGroup {
