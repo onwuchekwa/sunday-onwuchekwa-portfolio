@@ -36,8 +36,35 @@ const contactItems = computed(() => {
     })
   }
 
+  const linkedIn = findLinkedInUrl(props.settings.socialLinks ?? [])
+  if (linkedIn) {
+    items.push({
+      id: 'linkedin',
+      href: linkedIn,
+      label: displayWebsite(linkedIn).replace(/^www\./, ''),
+      external: true,
+    })
+  }
+
   return items
 })
+
+/** Skips placeholder links like "https://linkedin.com" that have no profile path. */
+function findLinkedInUrl(links: SiteSettings['socialLinks']): string | null {
+  for (const link of links) {
+    const url = link.url?.trim()
+    if (!url) continue
+    const isLinkedIn = /linkedin/i.test(link.platform ?? '') || /linkedin\.com/i.test(url)
+    if (!isLinkedIn) continue
+    try {
+      const parsed = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`)
+      if (parsed.pathname.replace(/\/+$/, '')) return parsed.href.replace(/\/$/, '')
+    } catch {
+      continue
+    }
+  }
+  return null
+}
 
 function displayWebsite(url: string): string {
   return url.replace(/^https?:\/\//, '').replace(/\/$/, '')
