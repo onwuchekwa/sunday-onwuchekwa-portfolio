@@ -48,6 +48,19 @@ function normalizeEducationEntry(entry: Record<string, unknown>): Record<string,
   return { ...normalizeInstitutionEntry(entry), showOnAbout: isAboutEntryVisible(entry) }
 }
 
+/** Legacy entries stored "Organization | Venue" in a single organization field. */
+function normalizeServiceEntry(entry: Record<string, unknown>): Record<string, unknown> {
+  const venue = String(entry.venue ?? '').trim()
+  const organization = String(entry.organization ?? '').trim()
+  const separator = organization.lastIndexOf(' | ')
+  if (venue || separator === -1) return entry
+  return {
+    ...entry,
+    organization: organization.slice(0, separator).trim(),
+    venue: organization.slice(separator + 3).trim(),
+  }
+}
+
 const LEGACY_SECTION_TITLES: Partial<Record<CvSectionId, string[]>> = {
   appointments: ['Experience'],
   service: ['Organizing and Service'],
@@ -99,6 +112,16 @@ export const CV_SECTION_META: CvSectionMeta[] = [
     ],
   },
   {
+    id: 'service',
+    title: 'Academic Service',
+    fields: [
+      { key: 'role', label: 'Role', type: 'text' },
+      { key: 'organization', label: 'Organization', type: 'text' },
+      { key: 'venue', label: 'Venue / location', type: 'text' },
+      { key: 'dates', label: 'Dates', type: 'text' },
+    ],
+  },
+  {
     id: 'industryExperience',
     title: 'Industry Experience',
     fields: [
@@ -127,15 +150,6 @@ export const CV_SECTION_META: CvSectionMeta[] = [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'issuer', label: 'Issuer', type: 'text' },
       { key: 'year', label: 'Year', type: 'text' },
-    ],
-  },
-  {
-    id: 'service',
-    title: 'Academic Service',
-    fields: [
-      { key: 'role', label: 'Role', type: 'text' },
-      { key: 'organization', label: 'Organization / Venue', type: 'text' },
-      { key: 'dates', label: 'Dates', type: 'text' },
     ],
   },
   {
@@ -244,6 +258,9 @@ export function normalizeCvDocument(data: CvDocument): CvDocument {
         }
         if (section.id === 'researchInterests') {
           return normalizeResearchInterestEntry(normalized)
+        }
+        if (section.id === 'service') {
+          return normalizeServiceEntry(normalized)
         }
         return normalized
       }),

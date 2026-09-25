@@ -342,8 +342,11 @@ export function formatAwardEntry(entry: Record<string, unknown>): string {
 
 export function formatServiceEntry(entry: Record<string, unknown>): string {
   const role = [entry.role, entry.dates].filter(Boolean).join(' ')
-  const org = String(entry.organization ?? '').trim()
-  return org ? `${role}, ${org}` : role
+  const orgVenue = [entry.organization, entry.venue]
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean)
+    .join(', ')
+  return orgVenue ? `${role}, ${orgVenue}` : role
 }
 
 export function formatInvitedEvent(entry: Record<string, unknown>): string {

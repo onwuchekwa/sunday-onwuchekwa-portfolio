@@ -38,7 +38,9 @@ function entryRows(entry: Record<string, unknown>): {
         },
         line2: {
           left: String(entry.organization ?? ''),
+          right: String(entry.venue ?? ''),
           leftItalic: true,
+          rightItalic: true,
         },
       }
     case 'invitedEvents':

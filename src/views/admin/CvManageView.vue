@@ -66,7 +66,7 @@ const sectionGuidance = computed(() => {
     case 'service':
       return {
         type: 'info' as const,
-        text: 'Academic service: peer review, program committees, workshop or conference organizing, and departmental or university committees. Not volunteer work — use Volunteer Experience for that.',
+        text: 'Academic service: peer review, program committees, workshop or conference organizing, and departmental or university committees. Not volunteer work — use Volunteer Experience for that. Organization appears on the left of line 2 and Venue / location on the right.',
       }
     case 'certificates':
       return {
