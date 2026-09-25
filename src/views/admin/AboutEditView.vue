@@ -38,7 +38,7 @@ async function handleSave() {
         <v-alert type="info" variant="tonal" density="comfortable" class="mb-6">
           Research Interests and Education on the About page — and Research Focus on the home page
           — are pulled from the
-          <router-link to="/admin/cv">CV Builder</router-link>
+          <router-link :to="{ name: 'admin-cv' }">CV Builder</router-link>
           (sections: <strong>Research Interests</strong> and <strong>Education</strong>) — one
           source for all three.
         </v-alert>

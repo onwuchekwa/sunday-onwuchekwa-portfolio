@@ -1,22 +1,23 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { publicSiteOrigin } from '@/utils/hosts'
 
 const router = useRouter()
 const auth = useAuthStore()
 
 const navItems = [
-  { title: 'Dashboard', icon: 'mdi-view-dashboard', to: '/admin' },
-  { title: 'Site Settings', icon: 'mdi-cog', to: '/admin/settings' },
-  { title: 'About', icon: 'mdi-account', to: '/admin/about' },
-  { title: 'Publications', icon: 'mdi-book-open-variant', to: '/admin/publications' },
-  { title: 'News', icon: 'mdi-newspaper', to: '/admin/news' },
-  { title: 'CV Builder', icon: 'mdi-file-document-edit', to: '/admin/cv' },
+  { title: 'Dashboard', icon: 'mdi-view-dashboard', to: { name: 'admin-dashboard' }, exact: true },
+  { title: 'Site Settings', icon: 'mdi-cog', to: { name: 'admin-settings' } },
+  { title: 'About', icon: 'mdi-account', to: { name: 'admin-about' } },
+  { title: 'Publications', icon: 'mdi-book-open-variant', to: { name: 'admin-publications' } },
+  { title: 'News', icon: 'mdi-newspaper', to: { name: 'admin-news' } },
+  { title: 'CV Builder', icon: 'mdi-file-document-edit', to: { name: 'admin-cv' } },
 ]
 
 async function handleLogout() {
   await auth.logout()
-  router.push('/admin/login')
+  router.push({ name: 'admin-login' })
 }
 </script>
 
@@ -31,8 +32,9 @@ async function handleLogout() {
       <v-list nav density="compact" class="text-white">
         <v-list-item
           v-for="item in navItems"
-          :key="item.to"
+          :key="item.title"
           :to="item.to"
+          :exact="item.exact"
           :prepend-icon="item.icon"
           :title="item.title"
           color="white"
@@ -56,8 +58,9 @@ async function handleLogout() {
             color="white"
             class="mt-2"
             prepend-icon="mdi-open-in-new"
-            to="/"
+            :href="publicSiteOrigin"
             target="_blank"
+            rel="noopener"
           >
             View site
           </v-btn>

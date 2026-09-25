@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { publicSiteOrigin } from '@/utils/hosts'
 
 const email = ref('')
 const password = ref('')
@@ -31,7 +32,7 @@ function safeRedirect(value: unknown): string {
   if (target.startsWith('/') && !target.startsWith('//')) {
     return target
   }
-  return '/admin'
+  return '/'
 }
 </script>
 
@@ -72,7 +73,7 @@ function safeRedirect(value: unknown): string {
           </v-btn>
         </v-form>
 
-        <v-btn to="/" variant="text" block class="mt-4" prepend-icon="mdi-arrow-left">
+        <v-btn :href="publicSiteOrigin" variant="text" block class="mt-4" prepend-icon="mdi-arrow-left">
           Back to site
         </v-btn>
       </v-card>

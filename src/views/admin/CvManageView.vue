@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useCv } from '@/composables/useCv'
+import { publicSiteOrigin } from '@/utils/hosts'
 import { CV_SECTION_META, entryToFormValues, isAboutEntryVisible, isEntryVisible, type CvSectionId } from '@/types/cv'
 
 const { cv, load, save, loading } = useCv()
@@ -163,12 +164,12 @@ function entryDisplay(entry: Record<string, unknown>): string {
         <h1 class="text-h4 font-weight-bold text-primary">CV Builder</h1>
         <p class="text-body-2 text-medium-emphasis">
           Publications are managed in
-          <router-link to="/admin/publications">Publications</router-link>
+          <router-link :to="{ name: 'admin-publications' }">Publications</router-link>
           with the "Include in CV" toggle.
         </p>
       </div>
       <div class="d-flex ga-2">
-        <v-btn to="/cv" target="_blank" variant="tonal" prepend-icon="mdi-eye">
+        <v-btn :href="`${publicSiteOrigin}/cv`" target="_blank" rel="noopener" variant="tonal" prepend-icon="mdi-eye">
           Preview CV
         </v-btn>
         <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save" @click="handleSave">

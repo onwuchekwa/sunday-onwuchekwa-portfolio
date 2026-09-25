@@ -6,6 +6,18 @@
     "site": "sunday-onwuchekwa",
     "public": "dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "redirects": [
+      {
+        "source": "/admin",
+        "destination": "https://admin.sundayonwuchekwa.com/",
+        "type": 302
+      },
+      {
+        "source": "/admin/:path*",
+        "destination": "https://admin.sundayonwuchekwa.com/:path*",
+        "type": 302
+      }
+    ],
     "rewrites": [
       {
         "source": "**",
