@@ -30,14 +30,14 @@ const rows = computed((): CvEntryRow[] => {
   if (props.variant === 'education') {
     return [
       {
-        left: props.institution,
-        right: props.location,
-        rightItalic: Boolean(props.location),
-      },
-      {
         left: props.degree,
         right: props.year,
         leftBold: true,
+      },
+      {
+        left: props.institution,
+        right: props.location,
+        rightItalic: Boolean(props.location),
       },
     ]
   }
