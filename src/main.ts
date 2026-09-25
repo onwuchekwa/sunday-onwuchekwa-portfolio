@@ -4,6 +4,7 @@ import App from './App.vue'
 import router from './router'
 import vuetify from './plugins/vuetify'
 import { useAuthStore } from './stores/auth'
+import { initAnalytics } from './firebase/analytics'
 import './styles/main.css'
 
 const app = createApp(App)
@@ -17,3 +18,5 @@ const auth = useAuthStore()
 auth.init()
 
 app.mount('#app')
+
+void initAnalytics()
