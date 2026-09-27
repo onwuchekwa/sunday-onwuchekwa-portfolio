@@ -2,19 +2,12 @@
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useNews } from '@/composables/useNews'
+import { formatLongDate as formatDate } from '@/utils/date'
 
 const route = useRoute()
 const { newsItems, load, loading } = useNews()
 
 const item = computed(() => newsItems.value.find((n) => n.id === route.params.id))
-
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
 
 onMounted(() => load(true))
 </script>

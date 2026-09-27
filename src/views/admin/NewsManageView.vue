@@ -8,6 +8,7 @@ import {
   NEWS_IMAGE_MAX_BYTES,
 } from '@/utils/imageToBase64'
 import type { NewsItem } from '@/types/content'
+import { todayLocalIsoDate } from '@/utils/date'
 
 const { newsItems, load, create, update, remove, loading } = useNews()
 const dialog = ref(false)
@@ -18,7 +19,7 @@ const error = ref<string | null>(null)
 const emptyForm = (): Omit<NewsItem, 'id'> => ({
   title: '',
   body: '',
-  date: new Date().toISOString().split('T')[0],
+  date: todayLocalIsoDate(),
   imageUrl: '',
   published: false,
   createdAt: new Date().toISOString(),

@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { getNewsItems, addNewsItem, updateNewsItem, deleteNewsItem } from '@/firebase/firestore'
 import type { NewsItem } from '@/types/content'
+import { parseLocalDate } from '@/utils/date'
 
 export function useNews() {
   const newsItems = ref<NewsItem[]>([])
@@ -41,7 +42,11 @@ export function useNews() {
 
   function latestNews(count = 3): NewsItem[] {
     return [...newsItems.value]
-      .sort((a, b) => b.date.localeCompare(a.date))
+      .sort(
+        (a, b) =>
+          parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime() ||
+          (b.createdAt ?? '').localeCompare(a.createdAt ?? ''),
+      )
       .slice(0, count)
   }
 

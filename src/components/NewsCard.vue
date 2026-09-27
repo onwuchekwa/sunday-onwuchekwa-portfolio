@@ -1,15 +1,8 @@
 <script setup lang="ts">
 import type { NewsItem } from '@/types/content'
+import { formatLongDate as formatDate } from '@/utils/date'
 
 defineProps<{ item: NewsItem }>()
-
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
 </script>
 
 <template>
