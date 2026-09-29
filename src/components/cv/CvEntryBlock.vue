@@ -37,6 +37,7 @@ const rows = computed((): CvEntryRow[] => {
       {
         left: props.institution,
         right: props.location,
+        leftItalic: Boolean(props.institution),
         rightItalic: Boolean(props.location),
       },
     ]
