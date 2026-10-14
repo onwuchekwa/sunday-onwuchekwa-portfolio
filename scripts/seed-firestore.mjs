@@ -91,7 +91,6 @@ const publications = [
     featured: true,
     includeInCv: true,
     cvOrder: 0,
-    cvCategory: 'conference_proceedings',
     cvStatus: 'CHI 2025',
     acceptanceRate: '25.1% acceptance rate',
     scholarNote: '#1 in Google Scholar',
@@ -117,7 +116,6 @@ const publications = [
     featured: true,
     includeInCv: true,
     cvOrder: 1,
-    cvCategory: 'journal_article',
     cvStatus: 'CSCW 2024',
     isJournalModel: true,
     thumbnailUrl: '',
@@ -138,7 +136,6 @@ const publications = [
     featured: false,
     includeInCv: true,
     cvOrder: 2,
-    cvCategory: 'archived_abstract',
     cvStatus: 'SOUPS 2023',
     thumbnailUrl: '',
     sourceUrl: '',
@@ -166,8 +163,6 @@ const news = [
 ]
 
 const cv = {
-  publicationsIntro:
-    'In computer science, the top and archival publications are often conference proceedings. The top publications for my field of Human-Computer Interaction are listed on Google Scholar. For example, the highest cited publication is a conference Proceedings of the ACM Conference on Human Factors in Computing Systems (CHI) and the top journal and second most cited publication is the Proceedings of the ACM on Human-Computer Interaction (PACM HCI).',
   sections: [
     {
       id: 'researchInterests',

@@ -1,11 +1,11 @@
 import type { Publication, PublicationAuthor } from '@/types/content'
 import {
-  PUBLICATION_CV_CATEGORIES,
-  resolvePublicationCvCategory,
-  type PublicationCvCategory,
+  publicationTypeLabel,
+  resolvePublicationStatus,
+  resolveVenueShort,
+  type PublicationType,
 } from '@/types/content'
 
-const JOURNAL_MODEL_MARKER = 'ᐩ'
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
@@ -180,7 +180,7 @@ export function formatEducationYear(year: string): string {
       end.label ||
       parseMonthYearToken(raw.replace(/present/gi, '').trim()).label ||
       `${MONTH_LABELS[new Date().getMonth()]} ${new Date().getFullYear()}`
-    return `Anticipated: ${label}`
+    return `Expected ${label}`
   }
 
   return end.label || raw
@@ -304,13 +304,6 @@ export function toResearchInterestDisplay(entry: Record<string, unknown>): Resea
   }
 }
 
-export function formatResearchInterests(entries: Record<string, unknown>[]): string {
-  return entries
-    .map((e) => resolveResearchInterestTitle(e))
-    .filter(Boolean)
-    .join(', ')
-}
-
 export function formatCertificates(entries: Record<string, unknown>[]): string {
   return entries
     .map((e) => String(e.name ?? '').trim())
@@ -426,56 +419,83 @@ export function formatAuthorNames(authors: PublicationAuthor[]): string {
     .join('')
 }
 
-export function formatPublicationCitationParts(pub: Publication): { rest: string } {
-  const category = resolvePublicationCvCategory(pub)
-  const journalMarker =
-    pub.isJournalModel || category === 'journal_article' ? ` ${JOURNAL_MODEL_MARKER}` : ''
-  const title = `"${pub.title}."`
-  const venue = pub.venue ? `${pub.venue}${journalMarker}` : ''
-  const yearPart = pub.year ? String(pub.year) : ''
-  const tail = [pub.cvStatus, pub.acceptanceRate, pub.scholarNote].filter(Boolean).join(', ')
-  const base = [title, venue, yearPart].filter(Boolean).join(' ')
-  return { rest: tail ? `${base} (${tail})` : base }
+export interface CvCitation {
+  /** "(2026)." or "(TBA)." */
+  year: string
+  title: string
+  link: string
+  /** Venue with its short name, e.g. "In Companion of … (CSCW Companion '26)" */
+  venue: string
+  /** Status / acceptance notes, e.g. "Accepted, 43.98% acceptance rate" */
+  notes: string
 }
 
-export function formatPublicationCitation(pub: Publication): string {
-  const authors = formatAuthorNames(normalizeAuthors(pub.authors))
-  const { rest } = formatPublicationCitationParts(pub)
-  return [authors, rest].filter(Boolean).join(' ')
+function straightQuotes(text: string): string {
+  return text.replace(/[‘’]/g, "'")
 }
+
+/** Citation pieces in the classic CS CV order: Authors (Year). Title. Venue (Short). */
+export function formatCvCitation(pub: Publication): CvCitation {
+  const underReview = resolvePublicationStatus(pub) === 'under_review'
+  const short = resolveVenueShort(pub)
+  const venue = underReview
+    ? `(${publicationTypeLabel(pub.type)})`
+    : [pub.venue, short && !straightQuotes(pub.venue).includes(straightQuotes(short)) ? `(${short})` : '']
+        .filter(Boolean)
+        .join(' ')
+  return {
+    year: underReview ? '(TBA).' : pub.year ? `(${pub.year}).` : '',
+    title: pub.title.trim().replace(/\.$/, ''),
+    link: pub.sourceUrl || pub.links?.doi || pub.links?.pdf || pub.links?.arxiv || '',
+    venue,
+    notes: [pub.cvStatus, pub.acceptanceRate, pub.scholarNote].filter(Boolean).join(', '),
+  }
+}
+
+/** CV publication groups (classic CS CV): code letter, bracketed heading, the types it holds. */
+const CV_PUBLICATION_GROUPS: { id: string; code: string; legend: string; title: string; types: PublicationType[] }[] = [
+  { id: 'conference', code: 'C', legend: 'Conference', title: 'Peer-reviewed Conference Proceedings', types: ['full_paper', 'short_paper'] },
+  { id: 'journal', code: 'J', legend: 'Journal', title: 'Journal Publications', types: ['journal', 'book_chapter'] },
+  {
+    id: 'short',
+    code: 'S',
+    legend: 'Short Paper and Poster',
+    title: 'Late-Breaking Work, Posters and Demos',
+    types: ['late_breaking_work', 'extended_abstract', 'poster', 'demo', 'doctoral_consortium'],
+  },
+  { id: 'workshop', code: 'W', legend: 'Workshop', title: 'Workshop Papers', types: ['workshop_paper'] },
+  { id: 'other', code: 'T', legend: 'Thesis', title: 'Theses and Other', types: ['thesis', 'other'] },
+]
 
 export interface PublicationCategoryGroup {
-  category: PublicationCvCategory
+  id: string
+  /** Entry prefix, e.g. "C" → [C.1] */
+  code: string
+  /** Legend label, e.g. "Conference" for "C=Conference" */
+  legend: string
   title: string
-  order: number
   publications: Publication[]
 }
 
+/** CV publication groups by type, under-review work last; each numbered with its own code. */
 export function groupPublicationsByCategory(publications: Publication[]): PublicationCategoryGroup[] {
   const sorted = [...publications].sort((a, b) => {
     if (a.cvOrder !== b.cvOrder) return a.cvOrder - b.cvOrder
     return b.year - a.year
   })
 
-  const grouped = new Map<PublicationCvCategory, Publication[]>()
-  for (const pub of sorted) {
-    const category = resolvePublicationCvCategory(pub)
-    const list = grouped.get(category) ?? []
-    list.push(pub)
-    grouped.set(category, list)
+  // US committees expect submitted work apart from refereed publications.
+  const underReview = sorted.filter((pub) => resolvePublicationStatus(pub) === 'under_review')
+  const refereed = sorted.filter((pub) => !underReview.includes(pub))
+
+  const groups: PublicationCategoryGroup[] = CV_PUBLICATION_GROUPS.map(({ types, ...group }) => ({
+    ...group,
+    publications: refereed.filter((pub) => types.includes(pub.type)),
+  })).filter((group) => group.publications.length)
+
+  if (underReview.length) {
+    groups.push({ id: 'under_review', code: 'U', legend: 'Under Review', title: 'Under Review', publications: underReview })
   }
-
-  return PUBLICATION_CV_CATEGORIES.filter((meta) => grouped.has(meta.value)).map((meta) => ({
-    category: meta.value,
-    title: meta.title,
-    order: meta.order,
-    publications: grouped.get(meta.value) ?? [],
-  }))
+  return groups
 }
 
-export const CV_PUBLICATION_FOOTNOTES = {
-  journalModel:
-    'Recently, several top conferences have transitioned to a journal model and do not yet have an impact factor — below these are indicated by ᐩ and include the corresponding conference name and google scholar ranking at time of publication.',
-  workshop:
-    'CHI is a tier 1 conference — workshop acceptance is considered selective, thus acceptance rates included where available.',
-}

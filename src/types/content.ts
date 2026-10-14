@@ -112,6 +112,7 @@ export const PUBLICATION_TYPE_GROUPS: { id: string; title: string; types: Public
   { id: 'other', title: 'Theses & Other', types: ['thesis', 'other'] },
 ]
 
+/** CV categories stored by older records; only read to infer their type. */
 export type PublicationCvCategory =
   | 'journal_article'
   | 'conference_proceedings'
@@ -119,27 +120,6 @@ export type PublicationCvCategory =
   | 'workshop_extended_abstract'
   | 'poster_extended_abstract'
   | 'archived_abstract'
-
-export const PUBLICATION_CV_CATEGORIES: {
-  value: PublicationCvCategory
-  title: string
-  order: number
-}[] = [
-  { value: 'journal_article', title: 'Journal Articles', order: 0 },
-  { value: 'conference_proceedings', title: 'Conference Proceedings', order: 1 },
-  { value: 'technology_demonstration', title: 'Technology Demonstration (Archived Abstract)', order: 2 },
-  {
-    value: 'workshop_extended_abstract',
-    title: 'Extended Abstracts for Workshops',
-    order: 3,
-  },
-  {
-    value: 'poster_extended_abstract',
-    title: 'Extended Abstracts (and presented as posters)',
-    order: 4,
-  },
-  { value: 'archived_abstract', title: 'Extended Abstracts (and yet to be presented as posters)', order: 5 },
-]
 
 /** Stored on records saved with the CS type list, so legacy records can be told apart. */
 export const PUBLICATION_TYPE_SCHEME = 'cs' as const
@@ -180,33 +160,6 @@ export function resolvePublicationStatus(
   if (/submitted|under review|in review|revis/.test(text)) return 'under_review'
   if (/accepted|forthcoming|to appear|in press/.test(text)) return 'accepted'
   return 'published'
-}
-
-export function defaultCvCategoryForType(
-  type: PublicationType,
-  status: PublicationStatus = 'published',
-): PublicationCvCategory {
-  switch (type) {
-    case 'journal':
-    case 'book_chapter':
-      return 'journal_article'
-    case 'demo':
-      return 'technology_demonstration'
-    case 'workshop_paper':
-    case 'doctoral_consortium':
-      return 'workshop_extended_abstract'
-    case 'late_breaking_work':
-    case 'extended_abstract':
-    case 'poster':
-    case 'other':
-      return status === 'under_review' ? 'archived_abstract' : 'poster_extended_abstract'
-    default:
-      return 'conference_proceedings'
-  }
-}
-
-export function resolvePublicationCvCategory(pub: Publication): PublicationCvCategory {
-  return pub.cvCategory || defaultCvCategoryForType(pub.type, resolvePublicationStatus(pub))
 }
 
 /** Short venue badge, e.g. "CHI '26". Falls back to a trailing "(CSCW Companion '26)" in the venue. */
@@ -257,7 +210,7 @@ export interface Publication {
   featured: boolean
   includeInCv: boolean
   cvOrder: number
-  /** CV section override; empty derives it from type and status */
+  /** Legacy CV category from older records (used to infer `type`) */
   cvCategory?: PublicationCvCategory | ''
   cvStatus?: string
   acceptanceRate?: string

@@ -1,34 +1,32 @@
-import { ref } from 'vue'
-
+/**
+ * The CV PDF comes from the browser's own print-to-PDF, styled by the print rules in
+ * CvView. Unlike a canvas snapshot, the text stays selectable and searchable.
+ */
 export function usePdfExport() {
-  const exporting = ref(false)
-
-  async function exportElement(
-    element: HTMLElement,
-    filename: string,
-  ): Promise<void> {
-    exporting.value = true
-    try {
-      const { default: html2pdf } = await import('html2pdf.js')
-      await html2pdf()
-        .set({
-          margin: [0.6, 0.6, 0.6, 0.6],
-          filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-        })
-        .from(element)
-        .save()
-    } finally {
-      exporting.value = false
+  /**
+   * Opens the print dialog. The document title becomes the suggested PDF filename, and
+   * `footerLabel` is printed at the bottom-left of every page (browsers with @page margin boxes).
+   */
+  function printAsPdf(filename: string, footerLabel = ''): void {
+    const previousTitle = document.title
+    const footerStyle = document.createElement('style')
+    footerStyle.textContent = footerLabel
+      ? `@page { @bottom-left { content: ${JSON.stringify(footerLabel)}; font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif; font-size: 8.5pt; color: #52606d; } }`
+      : ''
+    const restore = () => {
+      document.title = previousTitle
+      footerStyle.remove()
+      window.removeEventListener('afterprint', restore)
     }
+    window.addEventListener('afterprint', restore)
+    document.head.appendChild(footerStyle)
+    document.title = filename
+    window.print()
   }
 
   function cvFilename(name: string): string {
-    const safe = name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
-    return `${safe}_CV.pdf`
+    return `${name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')}_CV`
   }
 
-  return { exporting, exportElement, cvFilename }
+  return { printAsPdf, cvFilename }
 }

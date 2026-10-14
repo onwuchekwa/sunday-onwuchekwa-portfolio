@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
+import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import {
   estimateDocumentSize,
   FIRESTORE_DOC_LIMIT_BYTES,
@@ -53,12 +54,26 @@ async function handleSave() {
 
 <template>
   <div>
-    <h1 class="text-h4 font-weight-bold text-primary mb-6">Site Settings</h1>
+    <AdminPageHeader
+      title="Site Settings"
+      description="Your name, photo, contact details, profile links, and which pages are public."
+    >
+      <template #actions>
+        <v-btn type="submit" form="settings-form" color="primary" prepend-icon="mdi-content-save" :loading="saving">
+          Save settings
+        </v-btn>
+      </template>
+    </AdminPageHeader>
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
-    <v-card class="pa-6">
-      <v-form @submit.prevent="handleSave">
+    <v-alert v-if="error" type="error" variant="tonal" class="mb-4">
+      {{ error }}
+    </v-alert>
+
+    <v-form id="settings-form" @submit.prevent="handleSave">
+    <v-card class="pa-6 mb-4">
+        <h2 class="admin-card-title">Profile</h2>
         <v-row>
           <v-col cols="12" md="6">
             <v-text-field v-model="settings.name" label="Full name" required />
@@ -75,6 +90,22 @@ async function handleSave() {
               persistent-hint
             />
           </v-col>
+          <v-col cols="12" md="6">
+            <ImageUploadField
+              v-model="settings.profileImageUrl"
+              label="Profile photo"
+              :max-dimension="400"
+              :max-bytes="PROFILE_IMAGE_MAX_BYTES"
+              crop-mode="portrait-face"
+              hint="Large originals are auto-cropped to center your face, then compressed for Firestore."
+            />
+          </v-col>
+        </v-row>
+    </v-card>
+
+    <v-card class="pa-6 mb-4">
+        <h2 class="admin-card-title">Contact &amp; location</h2>
+        <v-row>
           <v-col cols="12" md="6">
             <v-text-field v-model="settings.email" label="Email" type="email" required />
           </v-col>
@@ -110,25 +141,17 @@ async function handleSave() {
               persistent-hint
             />
           </v-col>
-          <v-col cols="12" md="6">
-            <ImageUploadField
-              v-model="settings.profileImageUrl"
-              label="Profile photo"
-              :max-dimension="400"
-              :max-bytes="PROFILE_IMAGE_MAX_BYTES"
-              crop-mode="portrait-face"
-              hint="Large originals are auto-cropped to center your face, then compressed for Firestore."
-            />
-          </v-col>
         </v-row>
+    </v-card>
 
-        <h2 class="text-h6 font-weight-bold mt-4 mb-1">Page Visibility</h2>
-        <p class="text-body-2 text-medium-emphasis mb-3">
+    <v-card class="pa-6 mb-4">
+        <h2 class="admin-card-title">Page visibility</h2>
+        <p class="text-body-2 text-body-readable mb-3">
           Hidden pages are removed from the menu and show a 404 page to visitors. Pages that are
           visible but have no content yet show an "under construction" message.
         </p>
         <v-row class="mb-2">
-          <v-col v-for="page in PUBLIC_PAGES" :key="page.id" cols="6" md="4" lg="2">
+          <v-col v-for="page in PUBLIC_PAGES" :key="page.id" cols="12" sm="4">
             <v-switch
               v-model="settings.pageVisibility[page.id]"
               :label="page.title"
@@ -139,7 +162,13 @@ async function handleSave() {
           </v-col>
         </v-row>
 
-        <h2 class="text-h6 font-weight-bold mt-4 mb-3">Social Links</h2>
+    </v-card>
+
+    <v-card class="pa-6 mb-4">
+        <h2 class="admin-card-title">Profile links</h2>
+        <p class="text-body-2 text-body-readable mb-3">
+          Shown in the sidebar and footer. Icons use Material Design Icons names (e.g. mdi-school, mdi-linkedin).
+        </p>
         <div v-for="(link, index) in settings.socialLinks" :key="index" class="mb-3">
           <v-row>
             <v-col cols="12" md="3">
@@ -152,23 +181,15 @@ async function handleSave() {
               <v-text-field v-model="link.icon" label="Icon (mdi-*)" />
             </v-col>
             <v-col cols="12" md="1" class="d-flex align-center">
-              <v-btn icon="mdi-delete" variant="text" color="error" @click="removeSocialLink(index)" />
+              <v-btn icon="mdi-delete" variant="text" color="error" aria-label="Remove link" @click="removeSocialLink(index)" />
             </v-col>
           </v-row>
         </div>
-        <v-btn variant="tonal" prepend-icon="mdi-plus" class="mb-6" @click="addSocialLink">
+        <v-btn variant="tonal" prepend-icon="mdi-plus" @click="addSocialLink">
           Add link
         </v-btn>
-
-        <v-alert v-if="error" type="error" variant="tonal" class="mb-4">
-          {{ error }}
-        </v-alert>
-
-        <v-btn type="submit" color="primary" size="large" :loading="saving">
-          Save settings
-        </v-btn>
-      </v-form>
     </v-card>
+    </v-form>
 
     <v-snackbar v-model="snackbar" color="success" timeout="3000">
       Settings saved successfully.

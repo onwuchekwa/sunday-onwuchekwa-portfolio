@@ -5,6 +5,7 @@ import { usePublications } from '@/composables/usePublications'
 import { useCv } from '@/composables/useCv'
 import { useAbout } from '@/composables/useAbout'
 import { toResearchInterestDisplay } from '@/utils/cvFormat'
+import { resolvePublicationStatus } from '@/types/content'
 import PublicationCard from '@/components/PublicationCard.vue'
 
 const { settings, load: loadSettings } = useSiteSettings()
@@ -21,6 +22,18 @@ const bioParagraphs = computed(() =>
     .map((p) => p.trim())
     .filter(Boolean),
 )
+
+const SELECTED_PUBLICATION_COUNT = 2
+
+/** Featured papers first; otherwise the most recent work that isn't still under review. */
+const selectedPublications = computed(() => {
+  const byRecency = latestPublications(publications.value.length)
+  const featured = byRecency.filter((p) => p.featured)
+  const pool = featured.length
+    ? featured
+    : byRecency.filter((p) => resolvePublicationStatus(p) !== 'under_review')
+  return pool.slice(0, SELECTED_PUBLICATION_COUNT)
+})
 
 const researchThemes = computed(() => {
   const section = cv.value.sections.find((s) => s.id === 'researchInterests')
@@ -85,13 +98,13 @@ onMounted(async () => {
     </section>
 
     <section
-      v-if="publications.length && pageVisible.publications !== false"
+      v-if="selectedPublications.length && pageVisible.publications !== false"
       class="home-section"
       aria-labelledby="home-pubs"
     >
-      <h2 id="home-pubs" class="home-heading">Recent Publications</h2>
+      <h2 id="home-pubs" class="home-heading">Selected Publications</h2>
       <PublicationCard
-        v-for="pub in latestPublications(3)"
+        v-for="pub in selectedPublications"
         :key="pub.id"
         :publication="pub"
         :show-abstract="false"

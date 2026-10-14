@@ -11,7 +11,7 @@ onMounted(load)
 </script>
 
 <template>
-  <v-footer class="app-footer bg-primary">
+  <v-footer class="app-footer" color="surface">
     <div class="app-footer__inner">
       <div class="app-footer__contact">
         <a v-if="settings.email" :href="`mailto:${settings.email}`" class="app-footer__email">
@@ -30,7 +30,7 @@ onMounted(load)
             :title="link.platform"
             variant="text"
             size="small"
-            color="white"
+            color="primary"
           />
         </nav>
       </div>
@@ -42,10 +42,12 @@ onMounted(load)
 </template>
 
 <style scoped>
+/* Matches the header: white with a hairline rule; navy is the accent, not the fill. */
 .app-footer {
   flex: 0 0 auto;
   padding: 1.25rem 0;
   margin-top: 3rem;
+  border-top: 1px solid rgba(var(--v-theme-primary), 0.12);
 }
 
 .app-footer__inner {
@@ -79,7 +81,7 @@ onMounted(load)
   gap: 0.375rem;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #ffffff !important;
+  color: var(--byu-navy) !important;
   text-decoration: none;
 }
 
@@ -97,6 +99,6 @@ onMounted(load)
 .app-footer__copy {
   margin: 0;
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-body);
 }
 </style>

@@ -4,87 +4,59 @@ import type { SiteSettings } from '@/types/content'
 
 const props = defineProps<{
   settings: SiteSettings
+  /** Research interest titles, shown as a keyword line under the links */
+  keywords?: string[]
 }>()
 
-const contactItems = computed(() => {
-  const items: { id: string; href: string; label: string; external?: boolean }[] = []
+const phone = computed(() => props.settings.phone?.trim() ?? '')
 
-  if (props.settings.email?.trim()) {
-    items.push({
-      id: 'email',
-      href: `mailto:${props.settings.email.trim()}`,
-      label: props.settings.email.trim(),
-    })
-  }
-
-  const phone = props.settings.phone?.trim()
-  if (phone) {
-    items.push({
-      id: 'phone',
-      href: `tel:${phone.replace(/[^\d+]/g, '')}`,
-      label: phone,
-    })
-  }
-
+/** Labeled profile links (Personal Website | Google Scholar | …), skipping placeholder URLs. */
+const links = computed(() => {
+  const items: { label: string; href: string; icon: string }[] = []
   const website = props.settings.websiteUrl?.trim()
-  if (website) {
-    items.push({
-      id: 'website',
-      href: website,
-      label: displayWebsite(website),
-      external: true,
-    })
+  if (website) items.push({ label: 'Personal Website', href: website, icon: 'mdi-web' })
+  for (const link of props.settings.socialLinks ?? []) {
+    const url = link.url?.trim()
+    if (!url || !hasProfilePath(url)) continue
+    items.push({ label: link.platform, href: url, icon: link.icon || 'mdi-link-variant' })
   }
-
-  const linkedIn = findLinkedInUrl(props.settings.socialLinks ?? [])
-  if (linkedIn) {
-    items.push({
-      id: 'linkedin',
-      href: linkedIn,
-      label: displayWebsite(linkedIn).replace(/^www\./, ''),
-      external: true,
-    })
-  }
-
   return items
 })
 
-/** Skips placeholder links like "https://linkedin.com" that have no profile path. */
-function findLinkedInUrl(links: SiteSettings['socialLinks']): string | null {
-  for (const link of links) {
-    const url = link.url?.trim()
-    if (!url) continue
-    const isLinkedIn = /linkedin/i.test(link.platform ?? '') || /linkedin\.com/i.test(url)
-    if (!isLinkedIn) continue
-    try {
-      const parsed = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`)
-      if (parsed.pathname.replace(/\/+$/, '')) return parsed.href.replace(/\/$/, '')
-    } catch {
-      continue
-    }
+/** "https://linkedin.com" alone is a placeholder, not a profile. */
+function hasProfilePath(url: string): boolean {
+  try {
+    const parsed = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`)
+    return Boolean(parsed.pathname.replace(/\/+$/, '') || parsed.search)
+  } catch {
+    return false
   }
-  return null
-}
-
-function displayWebsite(url: string): string {
-  return url.replace(/^https?:\/\//, '').replace(/\/$/, '')
 }
 </script>
 
 <template>
-  <header class="cv-header text-center">
+  <header class="cv-header">
     <h1 class="cv-name">{{ settings.name }}</h1>
-    <p class="cv-title">{{ settings.title }}</p>
-    <p v-if="contactItems.length" class="cv-contact">
-      <template v-for="(item, index) in contactItems" :key="item.id">
-        <span v-if="index > 0" class="cv-contact-sep" aria-hidden="true"> | </span>
-        <a
-          :href="item.href"
-          :target="item.external ? '_blank' : undefined"
-          :rel="item.external ? 'noopener noreferrer' : undefined"
-        >
-          {{ item.label }}
+    <p v-if="settings.email || phone" class="cv-contact">
+      <template v-if="settings.email">
+        E-mail: <a :href="`mailto:${settings.email}`">{{ settings.email }}</a>
+      </template>
+      <template v-if="phone">
+        <span v-if="settings.email" class="cv-sep" aria-hidden="true"> | </span>
+        Phone: <a :href="`tel:${phone.replace(/[^\d+]/g, '')}`">{{ phone }}</a>
+      </template>
+    </p>
+    <p v-if="links.length" class="cv-links">
+      <template v-for="(link, index) in links" :key="link.href">
+        <span v-if="index > 0" class="cv-sep" aria-hidden="true"> | </span>
+        <a :href="link.href" target="_blank" rel="noopener noreferrer">
+          <v-icon :icon="link.icon" size="1.05em" class="cv-link-icon" />{{ link.label }}
         </a>
+      </template>
+    </p>
+    <p v-if="keywords?.length" class="cv-keywords">
+      <template v-for="(keyword, index) in keywords" :key="keyword">
+        <span v-if="index > 0" class="cv-sep" aria-hidden="true"> | </span>{{ keyword }}
       </template>
     </p>
   </header>
@@ -92,36 +64,50 @@ function displayWebsite(url: string): string {
 
 <style scoped>
 .cv-header {
-  margin-bottom: 0.5rem;
-  padding-bottom: 0;
+  text-align: center;
+  margin-bottom: 1.1em;
 }
 
 .cv-name {
-  font-family: 'Lora', serif;
-  font-size: 1.85rem;
+  font-family: inherit;
+  font-size: 2.6em;
   font-weight: 700;
-  color: #002e5d;
-  margin-bottom: 0.3rem;
-  letter-spacing: 0.01em;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--cv-ink-strong);
+  margin: 0 0 0.15em;
 }
 
-.cv-title {
-  font-size: 1rem;
-  color: rgba(0, 0, 0, 0.72);
-  margin-bottom: 0.45rem;
+.cv-contact,
+.cv-links,
+.cv-keywords {
+  margin: 0 0 0.3em;
+  line-height: 1.45;
 }
 
-.cv-contact {
-  font-size: 0.85rem;
-  margin-bottom: 0;
-}
-
-.cv-contact a {
-  color: rgb(var(--v-theme-primary));
+.cv-contact a,
+.cv-links a {
+  color: var(--cv-link);
   text-decoration: none;
 }
 
-.cv-contact-sep {
-  color: rgba(0, 0, 0, 0.55);
+.cv-contact a:hover,
+.cv-links a:hover {
+  text-decoration: underline;
+}
+
+.cv-link-icon {
+  margin-right: 0.2em;
+  vertical-align: -0.12em;
+  color: var(--cv-ink-strong);
+}
+
+.cv-sep {
+  color: var(--cv-ink);
+  padding: 0 0.15em;
+}
+
+.cv-keywords {
+  margin-bottom: 0;
 }
 </style>

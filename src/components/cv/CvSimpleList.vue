@@ -119,14 +119,23 @@ const renderedEntries = computed(() =>
 <template>
   <section v-if="entries.length" class="cv-section">
     <CvSectionHeading :title="title" />
-    <CvEntryBlock
-      v-for="(item, index) in renderedEntries"
-      :key="index"
-      variant="twoRow"
-      :line1="item.rows.line1"
-      :line2="item.rows.line2"
-      :details="item.rows.details"
-    />
+    <table v-if="sectionId === 'skills'" class="cv-skills">
+      <tbody>
+        <tr v-for="(entry, index) in entries" :key="index">
+          <th scope="row">{{ entry.category }}</th>
+          <td>{{ entry.items }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <template v-else>
+      <CvEntryBlock
+        v-for="(item, index) in renderedEntries"
+        :key="index"
+        :line1="item.rows.line1"
+        :line2="item.rows.line2"
+        :details="item.rows.details"
+      />
+    </template>
   </section>
 </template>
 

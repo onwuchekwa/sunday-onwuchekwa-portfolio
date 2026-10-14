@@ -1,25 +1,28 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { resolveEducationDisplay } from '@/utils/cvFormat'
-import CvSectionHeading from '@/components/cv/CvSectionHeading.vue'
-import CvEntryBlock from '@/components/cv/CvEntryBlock.vue'
+import { groupByInstitution } from '@/utils/cvGroups'
+import CvGroupedSection from '@/components/cv/CvGroupedSection.vue'
 
-defineProps<{
+const props = defineProps<{
   entries: Record<string, unknown>[]
 }>()
+
+/** Degrees nested under their institution. */
+const groups = computed(() =>
+  groupByInstitution(
+    props.entries.map((entry) => {
+      const display = resolveEducationDisplay(entry)
+      return {
+        name: display.institution,
+        location: display.location,
+        item: { title: display.degree, date: display.year, details: display.details },
+      }
+    }),
+  ),
+)
 </script>
 
 <template>
-  <section v-if="entries.length" class="cv-section">
-    <CvSectionHeading title="Education" />
-    <CvEntryBlock
-      v-for="(entry, index) in entries"
-      :key="index"
-      variant="education"
-      v-bind="resolveEducationDisplay(entry)"
-    />
-  </section>
+  <CvGroupedSection title="Education" :groups="groups" bold-items italic-notes />
 </template>
-
-<style scoped>
-@import './cv-section.css';
-</style>

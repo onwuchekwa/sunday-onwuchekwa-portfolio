@@ -25,7 +25,6 @@ export interface CvSection {
 export interface CvDocument {
   sections: CvSection[]
   lastUpdated: string
-  publicationsIntro?: string
 }
 
 export interface CvSectionMeta {
@@ -74,16 +73,8 @@ export function normalizeCvEntry(entry: Record<string, unknown>): Record<string,
   return { ...entry, visible: isEntryVisible(entry) }
 }
 
+/** Order follows US academic CV convention; publications follow Research Interests (see CvView). */
 export const CV_SECTION_META: CvSectionMeta[] = [
-  {
-    id: 'researchInterests',
-    title: 'Research Interests',
-    fields: [
-      { key: 'title', label: 'Title', type: 'text' },
-      { key: 'description', label: 'Description (home page Research Focus cards)', type: 'textarea' },
-      { key: 'icon', label: 'Icon (e.g. mdi-church)', type: 'text' },
-    ],
-  },
   {
     id: 'education',
     title: 'Education',
@@ -96,6 +87,15 @@ export const CV_SECTION_META: CvSectionMeta[] = [
     ],
   },
   {
+    id: 'researchInterests',
+    title: 'Research Interests',
+    fields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'description', label: 'Description (home page Research Focus cards)', type: 'textarea' },
+      { key: 'icon', label: 'Icon (e.g. mdi-church)', type: 'text' },
+    ],
+  },
+  {
     id: 'appointments',
     title: 'Academic Experience',
     fields: [
@@ -104,6 +104,45 @@ export const CV_SECTION_META: CvSectionMeta[] = [
       { key: 'location', label: 'Location', type: 'text' },
       { key: 'dates', label: 'Dates', type: 'text' },
       { key: 'details', label: 'Details (one bullet per line)', type: 'textarea' },
+    ],
+  },
+  {
+    id: 'awards',
+    title: 'Honors, Awards, and Fellowships',
+    fields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'issuer', label: 'Issuer', type: 'text' },
+      { key: 'year', label: 'Year', type: 'text' },
+    ],
+  },
+  {
+    id: 'grants',
+    title: 'Grants & Funding',
+    fields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'funder', label: 'Funder', type: 'text' },
+      { key: 'amount', label: 'Amount', type: 'text' },
+      { key: 'dates', label: 'Dates', type: 'text' },
+    ],
+  },
+  {
+    id: 'presentations',
+    title: 'Presentations & Talks',
+    fields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'venue', label: 'Venue', type: 'text' },
+      { key: 'date', label: 'Date', type: 'text' },
+      { key: 'type', label: 'Type', type: 'text' },
+    ],
+  },
+  {
+    id: 'invitedEvents',
+    title: 'Invited Events',
+    fields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'venue', label: 'Venue / Host', type: 'text' },
+      { key: 'date', label: 'Date', type: 'text' },
+      { key: 'details', label: 'Details', type: 'textarea' },
     ],
   },
   {
@@ -136,45 +175,6 @@ export const CV_SECTION_META: CvSectionMeta[] = [
       { key: 'location', label: 'Location', type: 'text' },
       { key: 'dates', label: 'Dates', type: 'text' },
       { key: 'details', label: 'Responsibilities (one bullet per line)', type: 'textarea' },
-    ],
-  },
-  {
-    id: 'awards',
-    title: 'Honors, Awards, and Fellowships',
-    fields: [
-      { key: 'title', label: 'Title', type: 'text' },
-      { key: 'issuer', label: 'Issuer', type: 'text' },
-      { key: 'year', label: 'Year', type: 'text' },
-    ],
-  },
-  {
-    id: 'invitedEvents',
-    title: 'Invited Events',
-    fields: [
-      { key: 'title', label: 'Title', type: 'text' },
-      { key: 'venue', label: 'Venue / Host', type: 'text' },
-      { key: 'date', label: 'Date', type: 'text' },
-      { key: 'details', label: 'Details', type: 'textarea' },
-    ],
-  },
-  {
-    id: 'presentations',
-    title: 'Presentations & Talks',
-    fields: [
-      { key: 'title', label: 'Title', type: 'text' },
-      { key: 'venue', label: 'Venue', type: 'text' },
-      { key: 'date', label: 'Date', type: 'text' },
-      { key: 'type', label: 'Type', type: 'text' },
-    ],
-  },
-  {
-    id: 'grants',
-    title: 'Grants & Funding',
-    fields: [
-      { key: 'title', label: 'Title', type: 'text' },
-      { key: 'funder', label: 'Funder', type: 'text' },
-      { key: 'amount', label: 'Amount', type: 'text' },
-      { key: 'dates', label: 'Dates', type: 'text' },
     ],
   },
   {
@@ -214,7 +214,6 @@ export function createDefaultCvDocument(): CvDocument {
   return {
     sections: createDefaultCvSections(),
     lastUpdated: new Date().toISOString(),
-    publicationsIntro: '',
   }
 }
 
@@ -278,7 +277,6 @@ export function normalizeCvDocument(data: CvDocument): CvDocument {
 
   return {
     ...data,
-    publicationsIntro: data.publicationsIntro ?? '',
     sections: sections
       .filter((s) => s.id === 'publications' || metaIds.has(s.id as CvSectionId))
       .sort((a, b) => {

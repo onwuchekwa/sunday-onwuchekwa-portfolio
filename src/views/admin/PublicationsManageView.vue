@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { usePublications } from '@/composables/usePublications'
+import { useConfirm } from '@/composables/useConfirm'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
+import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AuthorList from '@/components/AuthorList.vue'
 import { normalizeAuthors } from '@/utils/cvFormat'
 import { PUBLICATION_THUMBNAIL_MAX_BYTES } from '@/utils/imageToBase64'
 import {
-  defaultCvCategoryForType,
-  PUBLICATION_CV_CATEGORIES,
   PUBLICATION_LINK_FIELDS,
   PUBLICATION_STATUSES,
   PUBLICATION_TYPE_SCHEME,
   PUBLICATION_TYPES,
   publicationTypeLabel,
-  resolvePublicationCvCategory,
   resolvePublicationStatus,
   resolveVenueShort,
   type Publication,
@@ -21,6 +21,9 @@ import {
 } from '@/types/content'
 
 const { publications, load, create, update, remove, loading } = usePublications()
+const { confirm } = useConfirm()
+const route = useRoute()
+const router = useRouter()
 const dialog = ref(false)
 const editingId = ref<string | null>(null)
 const saving = ref(false)
@@ -43,7 +46,6 @@ const emptyForm = (): Omit<Publication, 'id'> => ({
   featured: false,
   includeInCv: true,
   cvOrder: 0,
-  cvCategory: '',
   cvStatus: '',
   acceptanceRate: '',
   scholarNote: '',
@@ -58,16 +60,6 @@ const authorError = ref('')
 
 const typeItems = PUBLICATION_TYPES.map((t) => ({ title: t.title, value: t.value, subtitle: t.hint }))
 
-const autoCvCategoryTitle = computed(() => {
-  const auto = defaultCvCategoryForType(form.value.type, form.value.status)
-  return PUBLICATION_CV_CATEGORIES.find((c) => c.value === auto)?.title ?? ''
-})
-
-const cvCategoryItems = computed(() => [
-  { title: `Automatic — ${autoCvCategoryTitle.value}`, value: '' },
-  ...PUBLICATION_CV_CATEGORIES.map((c) => ({ title: c.title, value: c.value })),
-])
-
 const venueBadgePreview = computed(() => resolveVenueShort(form.value))
 
 const headers = [
@@ -75,17 +67,18 @@ const headers = [
   { title: 'Year', key: 'year', width: 80 },
   { title: 'Type', key: 'type', width: 160 },
   { title: 'Status', key: 'status', width: 130 },
-  { title: 'CV section', key: 'cvCategory', width: 200 },
   { title: 'In CV', key: 'includeInCv', width: 80 },
   { title: 'Actions', key: 'actions', sortable: false, width: 120 },
 ]
 
-onMounted(load)
-
-function categoryLabel(pub: Publication): string {
-  const value = resolvePublicationCvCategory(pub)
-  return PUBLICATION_CV_CATEGORIES.find((c) => c.value === value)?.title ?? value
-}
+onMounted(async () => {
+  await load()
+  // Dashboard "Add a publication" shortcut
+  if (route.query.new) {
+    router.replace({ query: {} })
+    openCreate()
+  }
+})
 
 function statusLabel(pub: Publication): string {
   const value = resolvePublicationStatus(pub)
@@ -115,7 +108,6 @@ function openEdit(pub: Publication) {
     featured: pub.featured,
     includeInCv: pub.includeInCv,
     cvOrder: pub.cvOrder,
-    cvCategory: pub.cvCategory ?? '',
     cvStatus: pub.cvStatus ?? '',
     acceptanceRate: pub.acceptanceRate ?? '',
     scholarNote: pub.scholarNote ?? '',
@@ -171,10 +163,12 @@ async function handleSave() {
   }
 }
 
-async function handleDelete(id: string) {
-  if (confirm('Delete this publication?')) {
-    await remove(id)
-  }
+async function handleDelete(pub: Publication) {
+  const ok = await confirm({
+    title: 'Delete this publication?',
+    message: `“${pub.title}” will be removed from your site and CV. This can’t be undone.`,
+  })
+  if (ok && pub.id) await remove(pub.id)
 }
 
 async function toggleCv(id: string, current: boolean) {
@@ -184,25 +178,26 @@ async function toggleCv(id: string, current: boolean) {
 
 <template>
   <div>
-    <div class="d-flex align-center justify-space-between mb-6">
-      <h1 class="text-h4 font-weight-bold text-primary">Publications</h1>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Add publication</v-btn>
-    </div>
+    <AdminPageHeader
+      title="Publications"
+      description="Shown on the Publications page, grouped by year or type. Toggle “In CV” to include one in your CV."
+    >
+      <template #actions>
+        <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Add publication</v-btn>
+      </template>
+    </AdminPageHeader>
 
     <v-data-table
       :headers="headers"
       :items="publications"
       :loading="loading"
-      class="elevation-1 rounded-lg"
+      class="admin-table"
     >
       <template #item.type="{ item }">
         {{ publicationTypeLabel(item.type) }}
       </template>
       <template #item.status="{ item }">
         {{ statusLabel(item) }}
-      </template>
-      <template #item.cvCategory="{ item }">
-        {{ categoryLabel(item) }}
       </template>
       <template #item.includeInCv="{ item }">
         <v-switch
@@ -214,20 +209,23 @@ async function toggleCv(id: string, current: boolean) {
         />
       </template>
       <template #item.actions="{ item }">
-        <v-btn icon="mdi-pencil" variant="text" size="small" @click="openEdit(item)" />
-        <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="handleDelete(item.id!)" />
+        <v-btn icon="mdi-pencil" variant="text" size="small" aria-label="Edit publication" @click="openEdit(item)" />
+        <v-btn icon="mdi-delete" variant="text" size="small" color="error" aria-label="Delete publication" @click="handleDelete(item)" />
       </template>
     </v-data-table>
 
-    <v-dialog v-model="dialog" max-width="720" persistent scrollable>
-      <v-card class="pa-6">
-        <h2 class="text-h6 font-weight-bold mb-4">
-          {{ editingId ? 'Edit' : 'Add' }} Publication
-        </h2>
-        <v-form @submit.prevent="handleSave">
+    <v-dialog v-model="dialog" max-width="760" persistent scrollable>
+      <v-card class="admin-dialog">
+        <v-card-title class="admin-dialog__title">
+          {{ editingId ? 'Edit publication' : 'Add publication' }}
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="admin-dialog__body">
+        <v-form id="publication-form" @submit.prevent="handleSave">
+          <h3 class="admin-form-section">Basics</h3>
           <v-text-field v-model="form.title" label="Title" required class="mb-2" />
           <div class="mb-4">
-            <h3 class="text-subtitle-1 font-weight-bold mb-2">Authors</h3>
+            <h3 class="admin-form-section">Authors</h3>
             <div
               v-for="(author, index) in form.authors"
               :key="index"
@@ -313,8 +311,8 @@ async function toggleCv(id: string, current: boolean) {
               <v-select v-model="form.status" :items="PUBLICATION_STATUSES" label="Status" />
             </v-col>
           </v-row>
-          <v-textarea v-model="form.abstract" label="Abstract" rows="3" class="mb-2" />
-          <h3 class="text-subtitle-1 font-weight-bold mb-3">Links</h3>
+          <v-textarea v-model="form.abstract" label="Abstract" rows="3" auto-grow class="mb-2" />
+          <h3 class="admin-form-section">Links</h3>
           <v-row dense>
             <v-col v-for="field in PUBLICATION_LINK_FIELDS" :key="field.key" cols="12" sm="6">
               <v-text-field
@@ -332,8 +330,7 @@ async function toggleCv(id: string, current: boolean) {
             class="mb-2"
           />
 
-          <v-divider class="my-4" />
-          <h3 class="text-subtitle-1 font-weight-bold mb-3">Thumbnail</h3>
+          <h3 class="admin-form-section">Thumbnail</h3>
           <ImageUploadField
             :model-value="form.thumbnailUrl ?? ''"
             label="Publication thumbnail"
@@ -351,19 +348,8 @@ async function toggleCv(id: string, current: boolean) {
             class="mb-2"
           />
 
-          <v-divider class="my-4" />
-          <h3 class="text-subtitle-1 font-weight-bold mb-3">CV formatting</h3>
+          <h3 class="admin-form-section">CV &amp; home page</h3>
 
-          <v-select
-            v-model="form.cvCategory"
-            :items="cvCategoryItems"
-            item-title="title"
-            item-value="value"
-            label="CV section"
-            hint="Automatic picks the CV section from the type and status"
-            persistent-hint
-            class="mb-4"
-          />
           <v-text-field
             v-model="form.cvStatus"
             label="CV status (optional)"
@@ -385,29 +371,34 @@ async function toggleCv(id: string, current: boolean) {
             persistent-hint
             class="mb-2"
           />
-          <v-switch
-            v-model="form.isJournalModel"
-            label="Journal-model conference (shows ᐩ marker)"
-            color="primary"
-            class="mb-2"
-          />
 
           <v-row>
-            <v-col cols="4">
-              <v-switch v-model="form.featured" label="Featured" color="primary" />
+            <v-col cols="12" sm="5">
+              <v-switch
+                v-model="form.featured"
+                label="Featured on home"
+                hint="Up to 2 featured papers show under Selected Publications"
+                persistent-hint
+                color="primary"
+              />
             </v-col>
-            <v-col cols="4">
+            <v-col cols="12" sm="4">
               <v-switch v-model="form.includeInCv" label="Include in CV" color="primary" />
             </v-col>
-            <v-col cols="4">
+            <v-col cols="12" sm="3">
               <v-text-field v-model.number="form.cvOrder" label="CV order" type="number" />
             </v-col>
           </v-row>
-          <div class="d-flex justify-end ga-2 mt-4">
-            <v-btn variant="text" @click="dialog = false">Cancel</v-btn>
-            <v-btn type="submit" color="primary" :loading="saving">Save</v-btn>
-          </div>
         </v-form>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="admin-dialog__actions">
+          <v-spacer />
+          <v-btn variant="text" @click="dialog = false">Cancel</v-btn>
+          <v-btn type="submit" form="publication-form" color="primary" variant="flat" :loading="saving">
+            Save publication
+          </v-btn>
+        </v-card-actions>
       </v-card>
     </v-dialog>
   </div>

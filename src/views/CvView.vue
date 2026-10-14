@@ -5,7 +5,6 @@ import { useCv } from '@/composables/useCv'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import { usePublications } from '@/composables/usePublications'
 import CvHeader from '@/components/cv/CvHeader.vue'
-import CvResearchInterests from '@/components/cv/CvResearchInterests.vue'
 import CvCertificates from '@/components/cv/CvCertificates.vue'
 import CvEducation from '@/components/cv/CvEducation.vue'
 import CvExperience from '@/components/cv/CvExperience.vue'
@@ -17,7 +16,7 @@ import UnderConstruction from '@/components/UnderConstruction.vue'
 import { usePdfExport } from '@/composables/usePdfExport'
 import type { CvSectionId } from '@/types/cv'
 import { isEntryVisible } from '@/types/cv'
-import { sortEducationEntries, sortExperienceEntries } from '@/utils/cvFormat'
+import { resolveResearchInterestTitle, sortEducationEntries, sortExperienceEntries } from '@/utils/cvFormat'
 
 const { cv, load: loadCv, visibleSections, visibleEntries, sectionHasVisibleEntries, loading, error: cvError } =
   useCv()
@@ -29,6 +28,15 @@ const router = useRouter()
 const loaded = ref(false)
 
 const pdfName = computed(() => cvFilename(settings.value.name))
+/** Running footer on every printed page, as US academic CVs usually have. */
+const pdfFooter = computed(() => {
+  const updated = cv.value.lastUpdated
+    ? new Date(cv.value.lastUpdated).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : ''
+  return [`${settings.value.name} · Curriculum Vitae`, updated && `Updated ${updated}`]
+    .filter(Boolean)
+    .join(' · ')
+})
 const publicationGroups = computed(() => cvPublicationsByCategory())
 
 const educationEntries = computed(() => {
@@ -46,6 +54,7 @@ type RenderedSection =
   | { kind: 'education'; entries: Record<string, unknown>[] }
   | { kind: 'experience'; entries: Record<string, unknown>[]; title: string }
   | { kind: 'industry'; entries: Record<string, unknown>[]; title: string }
+  | { kind: 'publications' }
   | {
       kind: 'simple'
       entries: Record<string, unknown>[]
@@ -55,7 +64,7 @@ type RenderedSection =
 
 const renderedSections = computed<RenderedSection[]>(() =>
   publicSections.value
-    .map((section) => {
+    .map((section): RenderedSection | null => {
       const entries = visibleEntries(section)
       switch (section.id as CvSectionId) {
         case 'researchInterests':
@@ -88,6 +97,23 @@ const renderedSections = computed<RenderedSection[]>(() =>
     .filter((section): section is RenderedSection => section !== null),
 )
 
+/** Research interests appear as a keyword line in the header (classic academic CV style). */
+const researchKeywords = computed(() => {
+  const section = renderedSections.value.find((s) => s.kind === 'research')
+  return section && 'entries' in section
+    ? section.entries.map(resolveResearchInterestTitle).filter(Boolean)
+    : []
+})
+
+/** US academic CVs put publications high: right after Education. */
+const orderedSections = computed<RenderedSection[]>(() => {
+  const sections = renderedSections.value.filter((s) => s.kind !== 'research')
+  if (!publicationGroups.value.length) return sections
+  const anchor = sections.findIndex((s) => s.kind === 'education')
+  sections.splice(anchor + 1, 0, { kind: 'publications' })
+  return sections
+})
+
 function formatLastUpdated(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -113,15 +139,15 @@ onMounted(async () => {
 </script>
 
 <template>
-  <v-container class="py-12 cv-page">
-    <div class="d-flex flex-wrap align-center justify-space-between mb-8 ga-4 cv-page-toolbar">
+  <v-container class="py-8 py-md-12 cv-page">
+    <div class="cv-page-toolbar">
       <div>
         <h1 class="text-h3 font-weight-bold text-primary mb-1">Curriculum Vitae</h1>
-        <p v-if="cv.lastUpdated" class="text-caption text-medium-emphasis">
-          Last updated: {{ formatLastUpdated(cv.lastUpdated) }}
+        <p v-if="cv.lastUpdated" class="text-caption text-body-readable mb-0">
+          Last updated {{ formatLastUpdated(cv.lastUpdated) }}
         </p>
       </div>
-      <CvPdfButton target-id="cv-print-target" :filename="pdfName" />
+      <CvPdfButton :filename="pdfName" :footer-label="pdfFooter" />
     </div>
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-6" />
@@ -131,17 +157,13 @@ onMounted(async () => {
       title="The CV page is under construction"
     />
 
-    <v-card v-else class="pa-8 pa-md-12 cv-document" elevation="2">
-      <div id="cv-print-target" class="cv-print-target cv-document-body">
-        <CvHeader :settings="settings" />
+    <article v-else class="cv-document">
+      <div id="cv-print-target" class="cv-print-target">
+        <CvHeader :settings="settings" :keywords="researchKeywords" />
 
-        <template v-for="(section, index) in renderedSections" :key="index">
-          <CvResearchInterests
-            v-if="section.kind === 'research'"
-            :entries="section.entries"
-          />
+        <template v-for="(section, index) in orderedSections" :key="index">
           <CvCertificates
-            v-else-if="section.kind === 'certificates'"
+            v-if="section.kind === 'certificates'"
             :entries="section.entries"
           />
           <CvEducation
@@ -159,6 +181,10 @@ onMounted(async () => {
             :entries="section.entries"
             :title="section.title"
           />
+          <CvPublications
+            v-else-if="section.kind === 'publications'"
+            :groups="publicationGroups"
+          />
           <CvSimpleList
             v-else-if="section.kind === 'simple'"
             :entries="section.entries"
@@ -167,25 +193,50 @@ onMounted(async () => {
           />
         </template>
 
-        <CvPublications
-          v-if="publicationGroups.length"
-          :intro="cv.publicationsIntro"
-          :groups="publicationGroups"
-        />
       </div>
-    </v-card>
+    </article>
   </v-container>
 </template>
 
 <style scoped>
+.cv-page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 8.5in;
+  margin: 0 auto 1.5rem;
+}
+
+/* On screen the CV sits on a letter-width sheet of paper. */
 .cv-document {
-  max-width: 850px;
+  max-width: 8.5in;
   margin: 0 auto;
+  padding: 0.75in 0.7in;
+  background: #ffffff;
+  border: 1px solid rgba(0, 46, 93, 0.1);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 46, 93, 0.04), 0 8px 24px rgba(0, 46, 93, 0.06);
+}
+
+@media (max-width: 599.98px) {
+  .cv-document {
+    padding: 1.5rem 1.125rem;
+  }
 }
 
 .cv-print-target {
+  --cv-navy: #002e5d;
+  --cv-link: #0047ba;
+  --cv-ink: #1f2933;
+  --cv-ink-strong: #111827;
+  --cv-muted: #3e4c59;
+  /* Palatino-style serif, the classic LaTeX academic CV face; Lora when Palatino is absent. */
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, 'TeX Gyre Pagella', Lora, Georgia, serif;
   font-size: 11pt;
   line-height: 1.45;
+  color: var(--cv-ink);
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -202,15 +253,45 @@ onMounted(async () => {
   }
 
   .cv-document {
-    box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
-    max-width: none !important;
+    max-width: none;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+</style>
+
+<style>
+/* Print the CV page as a clean US-letter document with real (selectable) text. */
+@page {
+  size: letter;
+  margin: 1in;
+
+  @bottom-right {
+    content: counter(page) ' of ' counter(pages);
+    font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+    font-size: 8.5pt;
+    color: #52606d;
+  }
+}
+
+@media print {
+  html,
+  body,
+  .v-application,
+  .v-main {
+    background: #ffffff !important;
   }
 
-  .cv-print-target {
-    padding: 0;
-    background: #ffffff;
+  .app-header,
+  .app-footer,
+  .public-shell__aside {
+    display: none !important;
+  }
+
+  .v-main {
+    padding: 0 !important;
   }
 }
 </style>

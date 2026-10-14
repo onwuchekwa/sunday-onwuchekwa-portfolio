@@ -1,42 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { usePdfExport } from '@/composables/usePdfExport'
 
 const props = defineProps<{
-  targetId: string
   filename: string
+  footerLabel?: string
 }>()
 
-const { exporting, exportElement } = usePdfExport()
-const error = ref<string | null>(null)
-
-async function download() {
-  error.value = null
-  const element = document.getElementById(props.targetId)
-  if (!element) {
-    error.value = 'CV content not found'
-    return
-  }
-  try {
-    await exportElement(element, props.filename)
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : 'PDF export failed'
-  }
-}
+const { printAsPdf } = usePdfExport()
 </script>
 
 <template>
-  <div>
-    <v-btn
-      color="primary"
-      prepend-icon="mdi-download"
-      :loading="exporting"
-      @click="download"
-    >
+  <div class="d-flex flex-column align-end">
+    <v-btn color="primary" prepend-icon="mdi-file-download-outline" @click="printAsPdf(props.filename, props.footerLabel)">
       Download PDF
     </v-btn>
-    <v-snackbar :model-value="!!error" color="error" timeout="4000" @update:model-value="error = null">
-      {{ error }}
-    </v-snackbar>
+    <span class="cv-pdf-hint">Choose “Save as PDF” in the print dialog</span>
   </div>
 </template>
+
+<style scoped>
+.cv-pdf-hint {
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--text-body);
+  opacity: 0.8;
+}
+</style>

@@ -2,12 +2,15 @@
 import { computed, onMounted, ref } from 'vue'
 import { useCv } from '@/composables/useCv'
 import { publicSiteOrigin } from '@/utils/hosts'
+import { useConfirm } from '@/composables/useConfirm'
+import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import { CV_SECTION_META, entryToFormValues, isEntryVisible, type CvSectionId } from '@/types/cv'
 
 const { cv, load, save, loading } = useCv()
 const activeTab = ref<CvSectionId>('researchInterests')
 const saving = ref(false)
 const snackbar = ref(false)
+const { confirm } = useConfirm()
 const entryDialog = ref(false)
 const editingEntryIndex = ref<number | null>(null)
 const entryForm = ref<Record<string, string>>({})
@@ -37,7 +40,7 @@ const sectionGuidance = computed(() => {
     case 'education':
       return {
         type: 'info' as const,
-        text: 'End date: completed `Jun 2022`; in progress `Jun 2028` or `2024 – Present` (shown as Anticipated: Mon YYYY).',
+        text: 'End date: completed `Jun 2022`; in progress `Jun 2028` or `2024 – Present` (shown as Expected Mon YYYY).',
       }
     case 'appointments':
       return {
@@ -108,8 +111,12 @@ function saveEntry() {
   entryDialog.value = false
 }
 
-function deleteEntry(index: number) {
-  activeSection.value?.entries.splice(index, 1)
+async function deleteEntry(index: number) {
+  const ok = await confirm({
+    title: 'Delete this entry?',
+    message: 'It is removed from the builder now and from your CV when you click Save CV.',
+  })
+  if (ok) activeSection.value?.entries.splice(index, 1)
 }
 
 function toggleEntryVisibility(index: number, visible: boolean) {
@@ -139,24 +146,21 @@ function entryDisplay(entry: Record<string, unknown>): string {
 
 <template>
   <div>
-    <div class="d-flex align-center justify-space-between mb-6 flex-wrap ga-3">
-      <div>
-        <h1 class="text-h4 font-weight-bold text-primary">CV Builder</h1>
-        <p class="text-body-2 text-medium-emphasis">
-          Publications are managed in
-          <router-link :to="{ name: 'admin-publications' }">Publications</router-link>
-          with the "Include in CV" toggle.
-        </p>
-      </div>
-      <div class="d-flex ga-2">
+    <AdminPageHeader title="CV Builder">
+      <template #description>
+        Sections follow US academic order. Publications are managed in
+        <router-link :to="{ name: 'admin-publications' }">Publications</router-link>
+        with the “Include in CV” toggle.
+      </template>
+      <template #actions>
         <v-btn :href="`${publicSiteOrigin}/cv`" target="_blank" rel="noopener" variant="tonal" prepend-icon="mdi-eye">
           Preview CV
         </v-btn>
         <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save" @click="handleSave">
           Save CV
         </v-btn>
-      </div>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
@@ -189,16 +193,6 @@ function entryDisplay(entry: Record<string, unknown>): string {
           />
         </v-card>
 
-        <v-card class="pa-4 mt-4">
-          <h3 class="text-subtitle-2 font-weight-bold mb-3">Publications intro</h3>
-          <v-textarea
-            v-model="cv.publicationsIntro"
-            label="Intro paragraph on public CV"
-            rows="5"
-            hint="Shown above publication subsections on /cv and in the PDF."
-            persistent-hint
-          />
-        </v-card>
       </v-col>
 
       <v-col cols="12" md="9">
@@ -240,7 +234,7 @@ function entryDisplay(entry: Record<string, unknown>): string {
               }))
             "
             :row-props="({ item }) => ({ class: item.visible ? '' : 'cv-entry-hidden' })"
-            class="elevation-0"
+            class="admin-table"
           >
             <template #item.visible="{ item }">
               <v-switch
@@ -252,8 +246,8 @@ function entryDisplay(entry: Record<string, unknown>): string {
               />
             </template>
             <template #item.actions="{ item }">
-              <v-btn icon="mdi-pencil" variant="text" size="small" @click="openEditEntry(item._index)" />
-              <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="deleteEntry(item._index)" />
+              <v-btn icon="mdi-pencil" variant="text" size="small" aria-label="Edit entry" @click="openEditEntry(item._index)" />
+              <v-btn icon="mdi-delete" variant="text" size="small" color="error" aria-label="Delete entry" @click="deleteEntry(item._index)" />
             </template>
           </v-data-table>
 
@@ -264,12 +258,14 @@ function entryDisplay(entry: Record<string, unknown>): string {
       </v-col>
     </v-row>
 
-    <v-dialog v-model="entryDialog" max-width="560" persistent>
-      <v-card class="pa-6">
-        <h3 class="text-h6 font-weight-bold mb-4">
-          {{ editingEntryIndex !== null ? 'Edit' : 'Add' }} Entry
-        </h3>
-        <v-form @submit.prevent="saveEntry">
+    <v-dialog v-model="entryDialog" max-width="640" persistent scrollable>
+      <v-card class="admin-dialog">
+        <v-card-title class="admin-dialog__title">
+          {{ editingEntryIndex !== null ? 'Edit' : 'Add' }} {{ activeMeta?.title ?? 'entry' }} entry
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="admin-dialog__body">
+        <v-form id="cv-entry-form" @submit.prevent="saveEntry">
           <template v-for="field in activeMeta?.fields" :key="field.key">
             <v-textarea
               v-if="field.type === 'textarea'"
@@ -289,13 +285,16 @@ function entryDisplay(entry: Record<string, unknown>): string {
             v-model="entryVisible"
             label="Show on public CV"
             color="primary"
-            class="mb-2"
+            hide-details
           />
-          <div class="d-flex justify-end ga-2 mt-4">
-            <v-btn variant="text" @click="entryDialog = false">Cancel</v-btn>
-            <v-btn type="submit" color="primary">Save entry</v-btn>
-          </div>
         </v-form>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="admin-dialog__actions">
+          <v-spacer />
+          <v-btn variant="text" @click="entryDialog = false">Cancel</v-btn>
+          <v-btn type="submit" form="cv-entry-form" color="primary" variant="flat">Save entry</v-btn>
+        </v-card-actions>
       </v-card>
     </v-dialog>
 

@@ -94,3 +94,51 @@ html,
 body {
   background: #F3F7FA;
 }
+
+/* ---- Admin shared styles ---- */
+.admin-table {
+  border: 1px solid rgba(var(--v-theme-primary), 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.admin-table th {
+  font-weight: 600 !important;
+  color: var(--byu-navy) !important;
+  background: rgba(var(--v-theme-primary), 0.03);
+}
+
+.admin-card-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--byu-navy);
+  margin: 0 0 1rem;
+}
+
+.admin-form-section {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--byu-royal);
+  margin: 1.25rem 0 0.75rem;
+}
+
+.admin-form-section:first-child {
+  margin-top: 0.25rem;
+}
+
+.admin-dialog__title {
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  color: var(--byu-navy);
+  padding: 1rem 1.5rem !important;
+}
+
+.admin-dialog__body {
+  padding: 1rem 1.5rem 1.25rem !important;
+}
+
+.admin-dialog__actions {
+  padding: 0.75rem 1.5rem !important;
+}

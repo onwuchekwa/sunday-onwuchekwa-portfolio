@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useAbout } from '@/composables/useAbout'
 import { useSiteSettings } from '@/composables/useSiteSettings'
+import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 
 const { about, load: loadAbout, save: saveAbout, loading: aboutLoading } = useAbout()
 const { settings, load: loadSettings, save: saveSettings, loading: settingsLoading } = useSiteSettings()
@@ -28,12 +29,19 @@ async function handleSave() {
 
 <template>
   <div>
-    <h1 class="text-h4 font-weight-bold text-primary mb-2">Home Page</h1>
-    <p class="text-body-2 text-medium-emphasis mb-6">
-      Everything on the public home page, top to bottom. The Research table and Recent Publications
-      come from the <router-link :to="{ name: 'admin-cv' }">CV Builder</router-link> (Research
-      Interests) and <router-link :to="{ name: 'admin-publications' }">Publications</router-link>.
-    </p>
+    <AdminPageHeader title="Home Page">
+      <template #description>
+        Everything on the public home page, top to bottom. The Research table comes from the
+        <router-link :to="{ name: 'admin-cv' }">CV Builder</router-link> (Research Interests), and
+        Selected Publications from
+        <router-link :to="{ name: 'admin-publications' }">Publications</router-link> marked Featured.
+      </template>
+      <template #actions>
+        <v-btn type="submit" form="home-form" color="primary" prepend-icon="mdi-content-save" :loading="saving">
+          Save home page
+        </v-btn>
+      </template>
+    </AdminPageHeader>
 
     <v-progress-linear
       v-if="aboutLoading || settingsLoading"
@@ -43,7 +51,7 @@ async function handleSave() {
     />
 
     <v-card class="pa-6">
-      <v-form @submit.prevent="handleSave">
+      <v-form id="home-form" @submit.prevent="handleSave">
         <v-textarea
           v-model="settings.announcement"
           label="Announcement (optional)"
@@ -74,11 +82,7 @@ async function handleSave() {
           class="mb-6"
         />
 
-        <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
-
-        <v-btn type="submit" color="primary" size="large" :loading="saving">
-          Save home page
-        </v-btn>
+        <v-alert v-if="error" type="error" variant="tonal">{{ error }}</v-alert>
       </v-form>
     </v-card>
 

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useNews } from '@/composables/useNews'
+import { useConfirm } from '@/composables/useConfirm'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
+import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import {
   estimateDocumentSize,
   FIRESTORE_DOC_LIMIT_BYTES,
@@ -11,6 +14,9 @@ import type { NewsItem } from '@/types/content'
 import { todayLocalIsoDate } from '@/utils/date'
 
 const { newsItems, load, create, update, remove, loading } = useNews()
+const { confirm } = useConfirm()
+const route = useRoute()
+const router = useRouter()
 const dialog = ref(false)
 const editingId = ref<string | null>(null)
 const saving = ref(false)
@@ -34,7 +40,14 @@ const headers = [
   { title: 'Actions', key: 'actions', sortable: false, width: 120 },
 ]
 
-onMounted(() => load())
+onMounted(async () => {
+  await load()
+  // Dashboard "Post news" shortcut
+  if (route.query.new) {
+    router.replace({ query: {} })
+    openCreate()
+  }
+})
 
 function openCreate() {
   editingId.value = null
@@ -80,10 +93,12 @@ async function handleSave() {
   }
 }
 
-async function handleDelete(id: string) {
-  if (confirm('Delete this news post?')) {
-    await remove(id)
-  }
+async function handleDelete(item: NewsItem) {
+  const ok = await confirm({
+    title: 'Delete this news post?',
+    message: `“${item.title}” will be removed from your site. This can’t be undone.`,
+  })
+  if (ok && item.id) await remove(item.id)
 }
 
 async function togglePublished(id: string, current: boolean) {
@@ -93,16 +108,20 @@ async function togglePublished(id: string, current: boolean) {
 
 <template>
   <div>
-    <div class="d-flex align-center justify-space-between mb-6">
-      <h1 class="text-h4 font-weight-bold text-primary">News</h1>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Add post</v-btn>
-    </div>
+    <AdminPageHeader
+      title="News"
+      description="Published posts appear in the sidebar (latest 3) and on the News page."
+    >
+      <template #actions>
+        <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Add post</v-btn>
+      </template>
+    </AdminPageHeader>
 
     <v-data-table
       :headers="headers"
       :items="newsItems"
       :loading="loading"
-      class="elevation-1 rounded-lg"
+      class="admin-table"
     >
       <template #item.published="{ item }">
         <v-switch
@@ -114,20 +133,22 @@ async function togglePublished(id: string, current: boolean) {
         />
       </template>
       <template #item.actions="{ item }">
-        <v-btn icon="mdi-pencil" variant="text" size="small" @click="openEdit(item)" />
-        <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="handleDelete(item.id!)" />
+        <v-btn icon="mdi-pencil" variant="text" size="small" aria-label="Edit post" @click="openEdit(item)" />
+        <v-btn icon="mdi-delete" variant="text" size="small" color="error" aria-label="Delete post" @click="handleDelete(item)" />
       </template>
     </v-data-table>
 
-    <v-dialog v-model="dialog" max-width="640" persistent>
-      <v-card class="pa-6">
-        <h2 class="text-h6 font-weight-bold mb-4">
-          {{ editingId ? 'Edit' : 'Add' }} News Post
-        </h2>
-        <v-form @submit.prevent="handleSave">
+    <v-dialog v-model="dialog" max-width="760" persistent scrollable>
+      <v-card class="admin-dialog">
+        <v-card-title class="admin-dialog__title">
+          {{ editingId ? 'Edit news post' : 'Add news post' }}
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="admin-dialog__body">
+        <v-form id="news-form" @submit.prevent="handleSave">
           <v-text-field v-model="form.title" label="Title" required class="mb-2" />
           <v-text-field v-model="form.date" label="Date" type="date" required class="mb-2" />
-          <v-textarea v-model="form.body" label="Body" rows="6" required class="mb-2" />
+          <v-textarea v-model="form.body" label="Body" rows="6" auto-grow required class="mb-2" />
           <ImageUploadField
             v-model="form.imageUrl"
             label="Featured image (optional)"
@@ -138,15 +159,19 @@ async function togglePublished(id: string, current: boolean) {
           />
           <v-switch v-model="form.published" label="Published" color="primary" class="mb-4" />
 
-          <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mb-4">
+          <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mb-2">
             {{ error }}
           </v-alert>
-
-          <div class="d-flex justify-end ga-2">
-            <v-btn variant="text" @click="dialog = false">Cancel</v-btn>
-            <v-btn type="submit" color="primary" :loading="saving">Save</v-btn>
-          </div>
         </v-form>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="admin-dialog__actions">
+          <v-spacer />
+          <v-btn variant="text" @click="dialog = false">Cancel</v-btn>
+          <v-btn type="submit" form="news-form" color="primary" variant="flat" :loading="saving">
+            Save post
+          </v-btn>
+        </v-card-actions>
       </v-card>
     </v-dialog>
   </div>

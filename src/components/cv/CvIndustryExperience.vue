@@ -1,30 +1,30 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { formatExperienceDates } from '@/utils/cvFormat'
-import CvSectionHeading from '@/components/cv/CvSectionHeading.vue'
-import CvEntryBlock from '@/components/cv/CvEntryBlock.vue'
+import { groupByInstitution } from '@/utils/cvGroups'
+import CvGroupedSection from '@/components/cv/CvGroupedSection.vue'
 
-defineProps<{
+const props = defineProps<{
   entries: Record<string, unknown>[]
   title?: string
 }>()
+
+/** Roles nested under their organisation. */
+const groups = computed(() =>
+  groupByInstitution(
+    props.entries.map((entry) => ({
+      name: String(entry.company ?? ''),
+      location: String(entry.location ?? ''),
+      item: {
+        title: String(entry.role ?? ''),
+        date: formatExperienceDates(String(entry.dates ?? '')),
+        details: entry.details,
+      },
+    })),
+  ),
+)
 </script>
 
 <template>
-  <section v-if="entries.length" class="cv-section">
-    <CvSectionHeading :title="title ?? 'Industry Experience'" />
-    <CvEntryBlock
-      v-for="(entry, index) in entries"
-      :key="index"
-      variant="experience"
-      :primary="String(entry.role ?? '')"
-      :secondary="String(entry.company ?? '')"
-      :dates="formatExperienceDates(String(entry.dates ?? ''))"
-      :location="String(entry.location ?? '')"
-      :details="entry.details"
-    />
-  </section>
+  <CvGroupedSection :title="title ?? 'Industry Experience'" :groups="groups" />
 </template>
-
-<style scoped>
-@import './cv-section.css';
-</style>

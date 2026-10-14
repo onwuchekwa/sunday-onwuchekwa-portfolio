@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { resolveExperienceDisplay } from '@/utils/cvFormat'
-import CvSectionHeading from '@/components/cv/CvSectionHeading.vue'
-import CvEntryBlock from '@/components/cv/CvEntryBlock.vue'
+import { groupByInstitution } from '@/utils/cvGroups'
+import CvGroupedSection from '@/components/cv/CvGroupedSection.vue'
 
 const props = defineProps<{
   entries: Record<string, unknown>[]
@@ -10,29 +10,21 @@ const props = defineProps<{
   educationEntries?: Record<string, unknown>[]
 }>()
 
-const displayEntries = computed(() =>
-  props.entries.map((entry) =>
-    resolveExperienceDisplay(entry, { educationEntries: props.educationEntries }),
+/** Roles nested under their institution. */
+const groups = computed(() =>
+  groupByInstitution(
+    props.entries.map((entry) => {
+      const display = resolveExperienceDisplay(entry, { educationEntries: props.educationEntries })
+      return {
+        name: display.secondary,
+        location: display.location,
+        item: { title: display.primary, date: display.dates, details: display.details },
+      }
+    }),
   ),
 )
 </script>
 
 <template>
-  <section v-if="entries.length" class="cv-section">
-    <CvSectionHeading :title="title ?? 'Academic Experience'" />
-    <CvEntryBlock
-      v-for="(display, index) in displayEntries"
-      :key="index"
-      variant="experience"
-      :primary="display.primary"
-      :secondary="display.secondary"
-      :dates="display.dates"
-      :location="display.location"
-      :details="display.details"
-    />
-  </section>
+  <CvGroupedSection :title="title ?? 'Academic Experience'" :groups="groups" />
 </template>
-
-<style scoped>
-@import './cv-section.css';
-</style>
