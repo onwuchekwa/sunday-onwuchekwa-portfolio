@@ -3,18 +3,26 @@ import { computed, onMounted } from 'vue'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import { usePublications } from '@/composables/usePublications'
 import { useCv } from '@/composables/useCv'
-import { useNews } from '@/composables/useNews'
+import { useAbout } from '@/composables/useAbout'
 import { toResearchInterestDisplay } from '@/utils/cvFormat'
 import PublicationCard from '@/components/PublicationCard.vue'
-import NewsCard from '@/components/NewsCard.vue'
-import ProfileAvatar from '@/components/ProfileAvatar.vue'
 
 const { settings, load: loadSettings } = useSiteSettings()
 const { publications, load: loadPubs, latestPublications } = usePublications()
 const { cv, load: loadCv, visibleEntries } = useCv()
-const { newsItems, load: loadNews, latestNews } = useNews()
+const { about, load: loadAbout } = useAbout()
 
-const researchFocus = computed(() => {
+const firstName = computed(() => settings.value.name.trim().split(/\s+/)[0] ?? '')
+
+/** Blank lines separate paragraphs in the bio. */
+const bioParagraphs = computed(() =>
+  (about.value.bio ?? '')
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean),
+)
+
+const researchThemes = computed(() => {
   const section = cv.value.sections.find((s) => s.id === 'researchInterests')
   if (!section) return []
   return visibleEntries(section)
@@ -22,176 +30,236 @@ const researchFocus = computed(() => {
     .filter((item) => item.title)
 })
 
+const scholarUrl = computed(
+  () =>
+    settings.value.socialLinks.find((link) => /scholar/i.test(link.platform) && link.url)?.url ??
+    '',
+)
+
+const pageVisible = computed(() => settings.value.pageVisibility)
+
 onMounted(async () => {
-  await Promise.all([loadSettings(), loadPubs(), loadCv(), loadNews(true)])
+  await Promise.all([loadSettings(), loadPubs(), loadCv(), loadAbout()])
 })
 </script>
 
 <template>
-  <div>
-    <section class="hero-section py-16">
-      <v-container>
-        <v-row align="center">
-          <v-col cols="12" md="8">
-            <div class="hero-intro">
-              <h1 class="text-h2 text-md-h1 font-weight-bold text-primary mb-3">
-                {{ settings.name }}
-              </h1>
-              <p class="text-h6 text-md-h5 text-body-readable mb-4 hero-title">
-                {{ settings.title }}
-              </p>
-              <p class="hero-tagline text-body-1 mb-8">
-                {{ settings.tagline }}
-              </p>
-            </div>
-            <div class="d-flex flex-wrap ga-3 hero-actions">
-              <v-btn to="/about" color="primary" variant="flat" size="large" prepend-icon="mdi-account">
-                About me
-              </v-btn>
-              <v-btn
-                to="/publications"
-                variant="outlined"
-                color="primary"
-                size="large"
-                prepend-icon="mdi-book-open-variant"
-              >
-                Publications
-              </v-btn>
-              <v-btn
-                to="/cv"
-                variant="tonal"
-                color="secondary"
-                size="large"
-                prepend-icon="mdi-file-document"
-              >
-                CV
-              </v-btn>
-            </div>
-          </v-col>
-          <v-col cols="12" md="4" class="text-center">
-            <ProfileAvatar
-              :image-url="settings.profileImageUrl"
-              :size="220"
-              :icon-size="96"
-              :show-border="false"
-              class="mx-auto elevation-4"
-            />
-            <p
-              v-if="!settings.profileImageUrl"
-              class="text-caption text-body-readable mt-4"
-            >
-              Upload your photo in Admin → Settings
-            </p>
-          </v-col>
-        </v-row>
-      </v-container>
+  <div class="home py-8 py-md-12">
+    <header class="mb-6">
+      <h1 class="text-h2 font-weight-bold text-primary mb-2">Hi, I’m {{ firstName }}</h1>
+      <p class="home-role mb-0">{{ settings.title }}</p>
+    </header>
+
+    <div v-if="settings.announcement" class="home-callout mb-8" role="note">
+      <p class="mb-2">{{ settings.announcement }}</p>
+      <div class="home-callout__links">
+        <a v-if="settings.email" :href="`mailto:${settings.email}`">{{ settings.email }}</a>
+        <router-link v-if="pageVisible.cv !== false" to="/cv">CV</router-link>
+        <a v-if="scholarUrl" :href="scholarUrl" target="_blank" rel="noopener noreferrer">Google Scholar</a>
+      </div>
+    </div>
+
+    <div v-if="bioParagraphs.length" class="home-bio">
+      <p v-for="(paragraph, index) in bioParagraphs" :key="index">{{ paragraph }}</p>
+    </div>
+
+    <section v-if="researchThemes.length" class="home-section" aria-labelledby="home-research">
+      <h2 id="home-research" class="home-heading">Research</h2>
+      <table class="home-themes">
+        <thead>
+          <tr>
+            <th scope="col">Theme</th>
+            <th scope="col">What I study</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="theme in researchThemes" :key="theme.title">
+            <th scope="row">
+              <v-icon :icon="theme.icon" size="20" class="home-themes__icon" />
+              {{ theme.title }}
+            </th>
+            <td>{{ theme.description }}</td>
+          </tr>
+        </tbody>
+      </table>
     </section>
 
-    <section v-if="publications.length" class="py-12 bg-surface-variant">
-      <v-container>
-        <h2 class="text-h4 font-weight-bold text-primary mb-6">Recent Publications</h2>
-        <v-row>
-          <v-col
-            v-for="pub in latestPublications(2)"
-            :key="pub.id"
-            cols="12"
-            md="6"
-          >
-            <PublicationCard :publication="pub" :show-abstract="false" />
-          </v-col>
-        </v-row>
-        <v-btn
-          to="/publications"
-          variant="text"
-          color="primary"
-          class="mt-4"
-          append-icon="mdi-arrow-right"
-        >
-          See all publications
-        </v-btn>
-      </v-container>
+    <section
+      v-if="publications.length && pageVisible.publications !== false"
+      class="home-section"
+      aria-labelledby="home-pubs"
+    >
+      <h2 id="home-pubs" class="home-heading">Recent Publications</h2>
+      <PublicationCard
+        v-for="pub in latestPublications(3)"
+        :key="pub.id"
+        :publication="pub"
+        :show-abstract="false"
+        class="home-pub"
+      />
+      <router-link to="/publications" class="home-more mt-2">
+        All publications <v-icon icon="mdi-arrow-right" size="16" />
+      </router-link>
     </section>
 
-    <section v-if="newsItems.length" class="py-12">
-      <v-container>
-        <h2 class="text-h4 font-weight-bold text-primary mb-6">Latest News</h2>
-        <v-row>
-          <v-col
-            v-for="item in latestNews(3)"
-            :key="item.id"
-            cols="12"
-            md="4"
-          >
-            <NewsCard :item="item" />
-          </v-col>
-        </v-row>
-        <v-btn
-          to="/news"
-          variant="text"
-          color="primary"
-          class="mt-4"
-          append-icon="mdi-arrow-right"
-        >
-          See all news
-        </v-btn>
-      </v-container>
-    </section>
-
-    <section v-if="researchFocus.length" class="py-12">
-      <v-container>
-        <h2 class="text-h4 font-weight-bold text-primary mb-6">Research Focus</h2>
-        <v-row>
-          <v-col
-            v-for="item in researchFocus"
-            :key="item.title"
-            cols="12"
-            md="4"
-          >
-            <v-card class="pa-6 text-center h-100 research-card" variant="outlined">
-              <v-icon :icon="item.icon" size="48" color="secondary" class="mb-4" />
-              <h3 class="text-h6 font-weight-bold text-primary mb-3">{{ item.title }}</h3>
-              <p class="text-body-2 text-body-readable">
-                {{ item.description }}
-              </p>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-container>
+    <section v-if="settings.beyondResearch" class="home-section" aria-labelledby="home-beyond">
+      <h2 id="home-beyond" class="home-heading">Beyond Research</h2>
+      <p class="home-body mb-0">{{ settings.beyondResearch }}</p>
     </section>
   </div>
 </template>
 
 <style scoped>
-.hero-section {
-  background: linear-gradient(135deg, #ffffff 0%, rgba(189, 214, 230, 0.2) 100%);
+.home {
+  max-width: 780px;
 }
 
-.hero-intro {
-  width: 100%;
-}
-
-.hero-title {
+.home-role {
+  font-size: 1.0625rem;
   font-weight: 500;
   line-height: 1.5;
-}
-
-.hero-tagline {
   color: var(--byu-royal);
-  font-weight: 500;
-  line-height: 1.7;
-  padding-left: 1rem;
+}
+
+.home-callout {
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
   border-left: 4px solid var(--byu-royal);
+  background: rgba(189, 214, 230, 0.35);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--byu-navy);
+  font-weight: 500;
+}
+
+.home-callout__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.home-callout__links a,
+.home-more {
+  color: var(--byu-royal) !important;
+  text-underline-offset: 3px;
+}
+
+.home-bio p {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--text-body);
+  white-space: pre-line;
+  margin-bottom: 1rem;
+}
+
+.home-bio p:first-child {
+  font-size: 1.125rem;
+}
+
+.home-body {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--text-body);
+}
+
+.home-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.home-more:hover {
+  text-decoration: underline;
+}
+
+.home-section {
+  margin-top: 3rem;
+}
+
+.home-heading {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--byu-navy);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid var(--byu-light-blue);
+}
+
+.home-themes {
   width: 100%;
-  max-width: none;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.home-themes thead th {
   text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-body);
+  padding: 0.5rem 0.75rem 0.5rem 0;
 }
 
-.hero-actions .v-btn {
-  min-width: 10.5rem;
+.home-themes tbody th,
+.home-themes td {
+  padding: 0.875rem 0.75rem 0.875rem 0;
+  vertical-align: top;
+  border-top: 1px solid rgba(var(--v-theme-primary), 0.1);
 }
 
-.research-card {
-  border-color: rgba(0, 71, 186, 0.2) !important;
-  background: #ffffff;
+.home-themes tbody th {
+  width: 36%;
+  text-align: left;
+  font-weight: 600;
+  color: var(--byu-navy);
+}
+
+.home-themes td {
+  color: var(--text-body);
+}
+
+.home-themes__icon {
+  color: var(--byu-royal);
+  margin-right: 0.375rem;
+  vertical-align: -3px;
+}
+
+@media (max-width: 599.98px) {
+  .home-themes thead {
+    display: none;
+  }
+
+  .home-themes tbody tr {
+    display: block;
+    padding: 0.75rem 0;
+    border-top: 1px solid rgba(var(--v-theme-primary), 0.1);
+  }
+
+  .home-themes tbody th,
+  .home-themes td {
+    display: block;
+    width: auto;
+    padding: 0;
+    border: 0;
+  }
+
+  .home-themes td {
+    margin-top: 0.25rem;
+  }
+}
+
+.home-pub {
+  padding: 1.125rem 0;
+}
+
+.home-pub + .home-pub {
+  border-top: 1px solid rgba(var(--v-theme-primary), 0.08);
 }
 </style>

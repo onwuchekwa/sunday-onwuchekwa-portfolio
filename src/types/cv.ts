@@ -39,13 +39,8 @@ export function isEntryVisible(entry: Record<string, unknown>): boolean {
   return entry.visible !== false
 }
 
-/** Per-entry flag: hidden from About page education when false. Defaults to true when missing. */
-export function isAboutEntryVisible(entry: Record<string, unknown>): boolean {
-  return entry.showOnAbout !== false
-}
-
 function normalizeEducationEntry(entry: Record<string, unknown>): Record<string, unknown> {
-  return { ...normalizeInstitutionEntry(entry), showOnAbout: isAboutEntryVisible(entry) }
+  return normalizeInstitutionEntry(entry)
 }
 
 /** Legacy entries stored "Organization | Venue" in a single organization field. */

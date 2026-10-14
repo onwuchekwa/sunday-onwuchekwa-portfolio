@@ -10,12 +10,9 @@ const publicRoutes: RouteRecordRaw[] = [
     component: () => import('@/layouts/PublicLayout.vue'),
     children: [
       { path: '', name: 'home', component: () => import('@/views/HomeView.vue') },
-      {
-        path: 'about',
-        name: 'about',
-        component: () => import('@/views/AboutView.vue'),
-        meta: { page: 'about' },
-      },
+      // The bio now lives on the home page and contact details in the sidebar/footer.
+      { path: 'about', redirect: '/' },
+      { path: 'contact', redirect: '/' },
       {
         path: 'publications',
         name: 'publications',
@@ -38,13 +35,7 @@ const publicRoutes: RouteRecordRaw[] = [
         path: 'cv',
         name: 'cv',
         component: () => import('@/views/CvView.vue'),
-        meta: { page: 'cv' },
-      },
-      {
-        path: 'contact',
-        name: 'contact',
-        component: () => import('@/views/ContactView.vue'),
-        meta: { page: 'contact' },
+        meta: { page: 'cv', fullWidth: true },
       },
       {
         path: 'error',
@@ -74,7 +65,8 @@ const adminRoutes: RouteRecordRaw[] = [
     children: [
       { path: '', name: 'admin-dashboard', component: () => import('@/views/admin/DashboardView.vue') },
       { path: 'settings', name: 'admin-settings', component: () => import('@/views/admin/SettingsView.vue') },
-      { path: 'about', name: 'admin-about', component: () => import('@/views/admin/AboutEditView.vue') },
+      { path: 'home', name: 'admin-home', component: () => import('@/views/admin/HomeEditView.vue') },
+      { path: 'about', redirect: { name: 'admin-home' } },
       { path: 'publications', name: 'admin-publications', component: () => import('@/views/admin/PublicationsManageView.vue') },
       { path: 'news', name: 'admin-news', component: () => import('@/views/admin/NewsManageView.vue') },
       { path: 'cv', name: 'admin-cv', component: () => import('@/views/admin/CvManageView.vue') },

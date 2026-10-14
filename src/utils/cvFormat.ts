@@ -4,7 +4,6 @@ import {
   resolvePublicationCvCategory,
   type PublicationCvCategory,
 } from '@/types/content'
-import { isAboutEntryVisible } from '@/types/cv'
 
 const JOURNAL_MODEL_MARKER = 'ᐩ'
 
@@ -317,19 +316,6 @@ export function formatCertificates(entries: Record<string, unknown>[]): string {
     .map((e) => String(e.name ?? '').trim())
     .filter(Boolean)
     .join(' | ')
-}
-
-export function selectAboutEducationEntries(
-  entries: Record<string, unknown>[],
-  max = 4,
-): Record<string, unknown>[] {
-  return [...entries]
-    .filter(isAboutEntryVisible)
-    .sort(
-      (a, b) =>
-        parseEducationEndDate(String(b.year ?? '')) - parseEducationEndDate(String(a.year ?? '')),
-    )
-    .slice(0, max)
 }
 
 export function formatAwardEntry(entry: Record<string, unknown>): string {

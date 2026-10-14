@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useCv } from '@/composables/useCv'
 import { publicSiteOrigin } from '@/utils/hosts'
-import { CV_SECTION_META, entryToFormValues, isAboutEntryVisible, isEntryVisible, type CvSectionId } from '@/types/cv'
+import { CV_SECTION_META, entryToFormValues, isEntryVisible, type CvSectionId } from '@/types/cv'
 
 const { cv, load, save, loading } = useCv()
 const activeTab = ref<CvSectionId>('researchInterests')
@@ -12,21 +12,12 @@ const entryDialog = ref(false)
 const editingEntryIndex = ref<number | null>(null)
 const entryForm = ref<Record<string, string>>({})
 const entryVisible = ref(true)
-const entryShowOnAbout = ref(true)
 
-const isEducationTab = computed(() => activeTab.value === 'education')
-
-const tableHeaders = computed(() => {
-  const headers = [
-    { title: 'Entry', key: 'display' },
-    { title: 'Show on public CV', key: 'visible', width: 150 },
-  ]
-  if (isEducationTab.value) {
-    headers.push({ title: 'Show on About', key: 'showOnAbout', width: 150 })
-  }
-  headers.push({ title: 'Actions', key: 'actions', width: 100 })
-  return headers
-})
+const tableHeaders = [
+  { title: 'Entry', key: 'display' },
+  { title: 'Show on public CV', key: 'visible', width: 150 },
+  { title: 'Actions', key: 'actions', width: 100 },
+]
 
 const activeSection = computed(() =>
   cv.value.sections.find((s) => s.id === activeTab.value),
@@ -41,12 +32,12 @@ const sectionGuidance = computed(() => {
     case 'researchInterests':
       return {
         type: 'info' as const,
-        text: 'Powers Research Focus cards on the home page, interest chips on About, and the Research Interests line on your public CV. Use Material Design Icons (e.g. mdi-church, mdi-account-group).',
+        text: 'Powers the Research table on the home page and the Research Interests line on your public CV. Use Material Design Icons (e.g. mdi-church, mdi-account-group).',
       }
     case 'education':
       return {
         type: 'info' as const,
-        text: 'End date: completed `Jun 2022`; in progress `Jun 2028` or `2024 – Present` (shown as Anticipated: Mon YYYY). About shows up to 4 most recent degrees with "Show on About" enabled.',
+        text: 'End date: completed `Jun 2022`; in progress `Jun 2028` or `2024 – Present` (shown as Anticipated: Mon YYYY).',
       }
     case 'appointments':
       return {
@@ -84,7 +75,6 @@ function openAddEntry() {
   editingEntryIndex.value = null
   entryForm.value = {}
   entryVisible.value = true
-  entryShowOnAbout.value = true
   activeMeta.value?.fields.forEach((f) => {
     entryForm.value[f.key] = ''
   })
@@ -99,7 +89,6 @@ function openEditEntry(index: number) {
   const entry = section.entries[index]
   entryForm.value = entryToFormValues(activeTab.value, entry, meta)
   entryVisible.value = isEntryVisible(entry)
-  entryShowOnAbout.value = isAboutEntryVisible(entry)
   entryDialog.value = true
 }
 
@@ -110,9 +99,6 @@ function saveEntry() {
   const entry: Record<string, unknown> = {
     ...entryForm.value,
     visible: entryVisible.value,
-  }
-  if (isEducationTab.value) {
-    entry.showOnAbout = entryShowOnAbout.value
   }
   if (editingEntryIndex.value !== null) {
     section.entries[editingEntryIndex.value] = entry
@@ -130,12 +116,6 @@ function toggleEntryVisibility(index: number, visible: boolean) {
   const section = activeSection.value
   if (!section) return
   section.entries[index] = { ...section.entries[index], visible }
-}
-
-function toggleShowOnAbout(index: number, showOnAbout: boolean) {
-  const section = activeSection.value
-  if (!section) return
-  section.entries[index] = { ...section.entries[index], showOnAbout }
 }
 
 async function handleSave() {
@@ -256,7 +236,6 @@ function entryDisplay(entry: Record<string, unknown>): string {
                 ...e,
                 display: entryDisplay(e),
                 visible: isEntryVisible(e),
-                showOnAbout: isAboutEntryVisible(e),
                 _index: i,
               }))
             "
@@ -270,15 +249,6 @@ function entryDisplay(entry: Record<string, unknown>): string {
                 density="compact"
                 hide-details
                 @update:model-value="toggleEntryVisibility(item._index, $event ?? true)"
-              />
-            </template>
-            <template #item.showOnAbout="{ item }">
-              <v-switch
-                :model-value="item.showOnAbout"
-                color="primary"
-                density="compact"
-                hide-details
-                @update:model-value="toggleShowOnAbout(item._index, $event ?? true)"
               />
             </template>
             <template #item.actions="{ item }">
@@ -318,13 +288,6 @@ function entryDisplay(entry: Record<string, unknown>): string {
           <v-switch
             v-model="entryVisible"
             label="Show on public CV"
-            color="primary"
-            class="mb-2"
-          />
-          <v-switch
-            v-if="isEducationTab"
-            v-model="entryShowOnAbout"
-            label="Show on About page"
             color="primary"
             class="mb-2"
           />

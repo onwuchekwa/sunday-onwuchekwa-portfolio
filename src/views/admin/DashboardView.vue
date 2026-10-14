@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const cards = [
   { title: 'Site Settings', description: 'Name, tagline, email, social links', icon: 'mdi-cog', to: { name: 'admin-settings' }, color: 'primary' },
-  { title: 'About', description: 'Bio, research interests, education', icon: 'mdi-account', to: { name: 'admin-about' }, color: 'secondary' },
+  { title: 'Home Page', description: 'Announcement, bio, beyond research', icon: 'mdi-home-edit', to: { name: 'admin-home' }, color: 'secondary' },
   { title: 'Publications', description: 'Manage papers, posters, and workshops', icon: 'mdi-book-open-variant', to: { name: 'admin-publications' }, color: 'primary' },
   { title: 'News', description: 'Post updates and announcements', icon: 'mdi-newspaper', to: { name: 'admin-news' }, color: 'accent' },
   { title: 'CV Builder', description: 'Build your live academic CV', icon: 'mdi-file-document-edit', to: { name: 'admin-cv' }, color: 'secondary' },

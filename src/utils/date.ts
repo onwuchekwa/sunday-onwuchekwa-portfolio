@@ -19,3 +19,7 @@ export function todayLocalIsoDate(): string {
   const day = String(now.getDate()).padStart(2, '0')
   return `${now.getFullYear()}-${month}-${day}`
 }
+
+export function formatMonthYear(value: string): string {
+  return parseLocalDate(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
+}

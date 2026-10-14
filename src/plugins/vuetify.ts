@@ -13,7 +13,7 @@ export default createVuetify({
           primary: '#002E5D',
           secondary: '#0047BA',
           accent: '#BDD6E6',
-          background: '#FFFFFF',
+          background: '#F3F7FA',
           surface: '#FFFFFF',
           'surface-variant': '#F5F8FA',
           'on-surface-variant': '#1F2933',
@@ -32,7 +32,7 @@ export default createVuetify({
   },
   defaults: {
     VBtn: { rounded: 'lg' },
-    VCard: { rounded: 'lg', elevation: 1 },
+    VCard: { rounded: 'lg', elevation: 0, border: true },
     VTextField: { variant: 'outlined', density: 'comfortable' },
     VTextarea: { variant: 'outlined', density: 'comfortable' },
     VSelect: { variant: 'outlined', density: 'comfortable' },

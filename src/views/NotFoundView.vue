@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { useSiteSettings } from '@/composables/useSiteSettings'
+
+const { settings, load } = useSiteSettings()
+
+onMounted(load)
 </script>
 
 <template>
@@ -15,7 +21,13 @@
           <v-btn to="/" color="primary" size="large" prepend-icon="mdi-home">
             Back to home
           </v-btn>
-          <v-btn to="/contact" variant="tonal" size="large" prepend-icon="mdi-email">
+          <v-btn
+            v-if="settings.email"
+            :href="`mailto:${settings.email}`"
+            variant="tonal"
+            size="large"
+            prepend-icon="mdi-email"
+          >
             Contact me
           </v-btn>
         </div>

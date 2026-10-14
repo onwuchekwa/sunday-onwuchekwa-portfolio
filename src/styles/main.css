@@ -1,16 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap');
-
+/*
+ * Fonts are loaded from index.html (preconnect + stylesheet) so they don't block CSS parsing.
+ * Inter for the site; Lora and Source Sans 3 stay loaded for the CV/PDF layout.
+ */
 :root {
-  font-family: 'Source Sans 3', sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --v-font-body: var(--font-sans);
+  --v-font-heading: var(--font-sans);
+  font-family: var(--font-sans);
   --byu-navy: #002E5D;
   --byu-royal: #0047BA;
   --byu-light-blue: #BDD6E6;
   --text-body: #3E4C59;
 }
 
+html {
+  font-size: 100%;
+  line-height: 1.6;
+}
+
+body {
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/*
+ * Type scale. Vuetify 4 no longer ships the text-h1…text-caption classes the views use,
+ * so they are defined here with web-friendly, fluid sizes.
+ */
 h1, h2, h3, h4, h5, h6,
 .text-h1, .text-h2, .text-h3, .text-h4, .text-h5, .text-h6 {
-  font-family: 'Lora', serif;
+  font-family: var(--font-sans);
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.text-h1 { font-size: clamp(2.25rem, 1.8rem + 1.8vw, 3rem); line-height: 1.15; letter-spacing: -0.025em; }
+.text-h2 { font-size: clamp(2rem, 1.7rem + 1.2vw, 2.5rem); line-height: 1.2; letter-spacing: -0.02em; }
+.text-h3 { font-size: clamp(1.75rem, 1.55rem + 0.8vw, 2.125rem); }
+.text-h4 { font-size: clamp(1.5rem, 1.38rem + 0.5vw, 1.75rem); }
+.text-h5 { font-size: 1.25rem; }
+.text-h6 { font-size: 1.125rem; letter-spacing: -0.01em; }
+.text-subtitle-1 { font-size: 1rem; font-weight: 600; line-height: 1.5; }
+.text-subtitle-2 { font-size: 0.875rem; font-weight: 600; line-height: 1.5; }
+.text-body-1 { font-size: 1rem; line-height: 1.65; }
+.text-body-2 { font-size: 0.9375rem; line-height: 1.6; }
+.text-caption { font-size: 0.8125rem; line-height: 1.5; letter-spacing: 0.01em; }
+
+@media (min-width: 960px) {
+  .text-md-h1 { font-size: 3rem; line-height: 1.15; letter-spacing: -0.025em; }
+  .text-md-h5 { font-size: 1.25rem; line-height: 1.4; }
 }
 
 /* Do not override Vuetify button/link contrast (v-btn with to/href renders as <a>) */
@@ -38,4 +75,22 @@ a:not(.v-btn) {
 .v-btn.bg-primary .v-icon,
 .v-btn.bg-secondary .v-icon {
   color: #ffffff !important;
+}
+
+/* Sentence-case buttons read better than Material's spaced capitals. */
+.v-btn {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+
+:focus-visible {
+  outline: 2px solid var(--byu-royal);
+  outline-offset: 2px;
+}
+
+/* BYU mist page background; also on <html> so overscroll areas match. */
+html,
+body {
+  background: #F3F7FA;
 }

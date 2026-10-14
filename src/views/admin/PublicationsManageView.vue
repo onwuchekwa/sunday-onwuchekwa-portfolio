@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { usePublications } from '@/composables/usePublications'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
 import AuthorList from '@/components/AuthorList.vue'
@@ -8,9 +8,16 @@ import { PUBLICATION_THUMBNAIL_MAX_BYTES } from '@/utils/imageToBase64'
 import {
   defaultCvCategoryForType,
   PUBLICATION_CV_CATEGORIES,
+  PUBLICATION_LINK_FIELDS,
+  PUBLICATION_STATUSES,
+  PUBLICATION_TYPE_SCHEME,
+  PUBLICATION_TYPES,
+  publicationTypeLabel,
+  resolvePublicationCvCategory,
+  resolvePublicationStatus,
+  resolveVenueShort,
   type Publication,
-  type PublicationCvCategory,
-  type PublicationType,
+  type PublicationLinks,
 } from '@/types/content'
 
 const { publications, load, create, update, remove, loading } = usePublications()
@@ -18,18 +25,25 @@ const dialog = ref(false)
 const editingId = ref<string | null>(null)
 const saving = ref(false)
 
+function emptyLinks(): Required<PublicationLinks> {
+  return { pdf: '', doi: '', arxiv: '', slides: '', poster: '', video: '', code: '' }
+}
+
 const emptyForm = (): Omit<Publication, 'id'> => ({
   title: '',
   authors: [{ name: '', bold: false }],
   venue: '',
+  venueShort: '',
   year: new Date().getFullYear(),
-  type: 'paper',
+  type: 'full_paper',
+  typeScheme: PUBLICATION_TYPE_SCHEME,
+  status: 'published',
   abstract: '',
-  links: { pdf: '', doi: '', arxiv: '' },
+  links: emptyLinks(),
   featured: false,
   includeInCv: true,
   cvOrder: 0,
-  cvCategory: 'conference_proceedings',
+  cvCategory: '',
   cvStatus: '',
   acceptanceRate: '',
   scholarNote: '',
@@ -42,32 +56,40 @@ const emptyForm = (): Omit<Publication, 'id'> => ({
 const form = ref(emptyForm())
 const authorError = ref('')
 
-const cvCategoryItems = PUBLICATION_CV_CATEGORIES.map((c) => ({
-  title: c.title,
-  value: c.value,
-}))
+const typeItems = PUBLICATION_TYPES.map((t) => ({ title: t.title, value: t.value, subtitle: t.hint }))
+
+const autoCvCategoryTitle = computed(() => {
+  const auto = defaultCvCategoryForType(form.value.type, form.value.status)
+  return PUBLICATION_CV_CATEGORIES.find((c) => c.value === auto)?.title ?? ''
+})
+
+const cvCategoryItems = computed(() => [
+  { title: `Automatic — ${autoCvCategoryTitle.value}`, value: '' },
+  ...PUBLICATION_CV_CATEGORIES.map((c) => ({ title: c.title, value: c.value })),
+])
+
+const venueBadgePreview = computed(() => resolveVenueShort(form.value))
 
 const headers = [
   { title: 'Title', key: 'title' },
   { title: 'Year', key: 'year', width: 80 },
-  { title: 'CV category', key: 'cvCategory', width: 180 },
+  { title: 'Type', key: 'type', width: 160 },
+  { title: 'Status', key: 'status', width: 130 },
+  { title: 'CV section', key: 'cvCategory', width: 200 },
   { title: 'In CV', key: 'includeInCv', width: 80 },
   { title: 'Actions', key: 'actions', sortable: false, width: 120 },
 ]
 
 onMounted(load)
 
-watch(
-  () => form.value.type,
-  (type) => {
-    if (!form.value.cvCategory) {
-      form.value.cvCategory = defaultCvCategoryForType(type)
-    }
-  },
-)
+function categoryLabel(pub: Publication): string {
+  const value = resolvePublicationCvCategory(pub)
+  return PUBLICATION_CV_CATEGORIES.find((c) => c.value === value)?.title ?? value
+}
 
-function categoryLabel(value?: PublicationCvCategory): string {
-  return PUBLICATION_CV_CATEGORIES.find((c) => c.value === value)?.title ?? value ?? '—'
+function statusLabel(pub: Publication): string {
+  const value = resolvePublicationStatus(pub)
+  return PUBLICATION_STATUSES.find((s) => s.value === value)?.title ?? value
 }
 
 function openCreate() {
@@ -83,14 +105,17 @@ function openEdit(pub: Publication) {
     title: pub.title,
     authors: normalizeAuthors(pub.authors).map((author) => ({ ...author })),
     venue: pub.venue,
+    venueShort: pub.venueShort ?? '',
     year: pub.year,
     type: pub.type,
+    typeScheme: PUBLICATION_TYPE_SCHEME,
+    status: resolvePublicationStatus(pub),
     abstract: pub.abstract ?? '',
-    links: { ...pub.links },
+    links: { ...emptyLinks(), ...pub.links },
     featured: pub.featured,
     includeInCv: pub.includeInCv,
     cvOrder: pub.cvOrder,
-    cvCategory: pub.cvCategory ?? defaultCvCategoryForType(pub.type),
+    cvCategory: pub.cvCategory ?? '',
     cvStatus: pub.cvStatus ?? '',
     acceptanceRate: pub.acceptanceRate ?? '',
     scholarNote: pub.scholarNote ?? '',
@@ -131,7 +156,10 @@ async function handleSave() {
 
   saving.value = true
   try {
-    const payload = { ...form.value, authors }
+    const links = Object.fromEntries(
+      Object.entries(form.value.links).filter(([, url]) => url?.trim()),
+    ) as PublicationLinks
+    const payload = { ...form.value, authors, links, typeScheme: PUBLICATION_TYPE_SCHEME }
     if (editingId.value) {
       await update(editingId.value, payload)
     } else {
@@ -167,8 +195,14 @@ async function toggleCv(id: string, current: boolean) {
       :loading="loading"
       class="elevation-1 rounded-lg"
     >
+      <template #item.type="{ item }">
+        {{ publicationTypeLabel(item.type) }}
+      </template>
+      <template #item.status="{ item }">
+        {{ statusLabel(item) }}
+      </template>
       <template #item.cvCategory="{ item }">
-        {{ categoryLabel(item.cvCategory) }}
+        {{ categoryLabel(item) }}
       </template>
       <template #item.includeInCv="{ item }">
         <v-switch
@@ -248,23 +282,48 @@ async function toggleCv(id: string, current: boolean) {
             </p>
             <p v-if="authorError" class="text-error text-body-2 mt-1 mb-0">{{ authorError }}</p>
           </div>
-          <v-text-field v-model="form.venue" label="Venue" required class="mb-2" />
+          <v-text-field
+            v-model="form.venue"
+            label="Venue (full name)"
+            hint="e.g. Companion of the 2026 ACM Conference on Computer-Supported Cooperative Work"
+            persistent-hint
+            required
+            class="mb-4"
+          />
+          <v-text-field
+            v-model="form.venueShort"
+            label="Venue badge"
+            :placeholder="venueBadgePreview || `CHI '26`"
+            hint="Short label shown as a badge, e.g. CHI '26, CSCW '26 Companion, CHI '26 Workshop"
+            persistent-hint
+            class="mb-4"
+          />
           <v-row>
-            <v-col cols="6">
+            <v-col cols="12" sm="4">
               <v-text-field v-model.number="form.year" label="Year" type="number" required />
             </v-col>
-            <v-col cols="6">
-              <v-select
-                v-model="form.type"
-                :items="['paper', 'poster', 'workshop', 'other'] as PublicationType[]"
-                label="Type"
-              />
+            <v-col cols="12" sm="4">
+              <v-select v-model="form.type" :items="typeItems" label="Type">
+                <template #item="{ props: itemProps, item }">
+                  <v-list-item v-bind="itemProps" :subtitle="item.subtitle" />
+                </template>
+              </v-select>
+            </v-col>
+            <v-col cols="12" sm="4">
+              <v-select v-model="form.status" :items="PUBLICATION_STATUSES" label="Status" />
             </v-col>
           </v-row>
           <v-textarea v-model="form.abstract" label="Abstract" rows="3" class="mb-2" />
-          <v-text-field v-model="form.links.pdf" label="PDF URL" class="mb-2" />
-          <v-text-field v-model="form.links.doi" label="DOI URL" class="mb-2" />
-          <v-text-field v-model="form.links.arxiv" label="arXiv URL" class="mb-2" />
+          <h3 class="text-subtitle-1 font-weight-bold mb-3">Links</h3>
+          <v-row dense>
+            <v-col v-for="field in PUBLICATION_LINK_FIELDS" :key="field.key" cols="12" sm="6">
+              <v-text-field
+                v-model="form.links[field.key]"
+                :label="`${field.label} URL`"
+                :prepend-inner-icon="field.icon"
+              />
+            </v-col>
+          </v-row>
           <v-text-field
             v-model="form.sourceUrl"
             label="Source page URL"
@@ -300,8 +359,10 @@ async function toggleCv(id: string, current: boolean) {
             :items="cvCategoryItems"
             item-title="title"
             item-value="value"
-            label="CV category"
-            class="mb-2"
+            label="CV section"
+            hint="Automatic picks the CV section from the type and status"
+            persistent-hint
+            class="mb-4"
           />
           <v-text-field
             v-model="form.cvStatus"

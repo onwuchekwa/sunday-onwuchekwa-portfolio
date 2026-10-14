@@ -12,7 +12,13 @@ import {
   type DocumentData,
 } from 'firebase/firestore'
 import { getFirebaseDb } from './config'
-import type { About, NewsItem, Publication, SiteSettings } from '@/types/content'
+import {
+  normalizePublicationType,
+  type About,
+  type NewsItem,
+  type Publication,
+  type SiteSettings,
+} from '@/types/content'
 import type { CvDocument } from '@/types/cv'
 import { normalizeAuthors } from '@/utils/cvFormat'
 
@@ -41,7 +47,13 @@ export async function getPublications(): Promise<Publication[]> {
   const snap = await getDocs(q)
   return snap.docs.map((d) => {
     const data = d.data()
-    return { id: d.id, ...data, authors: normalizeAuthors(data.authors) } as Publication
+    return {
+      id: d.id,
+      ...data,
+      type: normalizePublicationType(data.type, data.cvCategory, data.typeScheme),
+      links: data.links ?? {},
+      authors: normalizeAuthors(data.authors),
+    } as Publication
   })
 }
 

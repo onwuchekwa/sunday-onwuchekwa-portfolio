@@ -71,7 +71,7 @@ async function handleSave() {
               v-model="settings.tagline"
               label="Site description"
               rows="3"
-              hint="Shown on the home page hero and used as the meta description for search engines."
+              hint="Used as the meta description for search engines and link previews. Your bio is edited under Home Page."
               persistent-hint
             />
           </v-col>
@@ -91,6 +91,22 @@ async function handleSave() {
               v-model="settings.websiteUrl"
               label="Website URL"
               hint="Shown on your CV header (e.g. https://sunday-onwuchekwa.web.app)"
+              persistent-hint
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="settings.affiliation"
+              label="Affiliation"
+              hint="Shown in the sidebar, e.g. Brigham Young University"
+              persistent-hint
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="settings.location"
+              label="Location"
+              hint="Shown in the sidebar, e.g. Provo, Utah"
               persistent-hint
             />
           </v-col>

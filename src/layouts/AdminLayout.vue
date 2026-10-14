@@ -9,7 +9,7 @@ const auth = useAuthStore()
 const navItems = [
   { title: 'Dashboard', icon: 'mdi-view-dashboard', to: { name: 'admin-dashboard' }, exact: true },
   { title: 'Site Settings', icon: 'mdi-cog', to: { name: 'admin-settings' } },
-  { title: 'About', icon: 'mdi-account', to: { name: 'admin-about' } },
+  { title: 'Home Page', icon: 'mdi-home-edit', to: { name: 'admin-home' } },
   { title: 'Publications', icon: 'mdi-book-open-variant', to: { name: 'admin-publications' } },
   { title: 'News', icon: 'mdi-newspaper', to: { name: 'admin-news' } },
   { title: 'CV Builder', icon: 'mdi-file-document-edit', to: { name: 'admin-cv' } },

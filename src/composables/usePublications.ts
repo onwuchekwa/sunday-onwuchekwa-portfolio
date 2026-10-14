@@ -50,10 +50,6 @@ export function usePublications() {
       .sort((a, b) => (a.cvOrder ?? 0) - (b.cvOrder ?? 0) || b.year - a.year)
   }
 
-  function publicationsByCategory(): PublicationCategoryGroup[] {
-    return groupPublicationsByCategory(publications.value)
-  }
-
   function cvPublicationsByCategory(): PublicationCategoryGroup[] {
     return groupPublicationsByCategory(cvPublications())
   }
@@ -79,7 +75,6 @@ export function usePublications() {
     remove,
     cvPublications,
     cvPublicationsByCategory,
-    publicationsByCategory,
     latestPublications,
   }
 }
