@@ -5,6 +5,7 @@
   "hosting": {
     "site": "sunday-onwuchekwa",
     "public": "dist",
+    "cleanUrls": true,
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "redirects": [
       {
