@@ -5,6 +5,7 @@ import { useNews } from '@/composables/useNews'
 import { useConfirm } from '@/composables/useConfirm'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import NewsBody from '@/components/NewsBody.vue'
 import {
   estimateDocumentSize,
   FIRESTORE_DOC_LIMIT_BYTES,
@@ -40,6 +41,58 @@ const headers = [
   { title: 'Actions', key: 'actions', sortable: false, width: 120 },
 ]
 
+const bodyTab = ref<'write' | 'preview'>('write')
+const bodyField = ref<{ $el: HTMLElement } | null>(null)
+
+/**
+ * Wrap the selected text (or insert a placeholder) with Markdown syntax, keeping the
+ * selection on the placeholder so it can be typed over.
+ */
+function format(kind: 'h2' | 'h3' | 'link' | 'bold' | 'italic' | 'list') {
+  const textarea = bodyField.value?.$el.querySelector('textarea')
+  const body = form.value.body
+  const start = textarea?.selectionStart ?? body.length
+  const end = textarea?.selectionEnd ?? body.length
+  const selected = body.slice(start, end)
+  const lineStart = body.lastIndexOf('\n', start - 1) + 1
+
+  let before = body.slice(0, start)
+  let insert = ''
+  let select: [number, number] = [0, 0]
+  switch (kind) {
+    case 'link': {
+      const text = selected || 'link text'
+      insert = `[${text}](https://)`
+      select = [text.length + 3, text.length + 11]
+      break
+    }
+    case 'bold':
+    case 'italic': {
+      const mark = kind === 'bold' ? '**' : '*'
+      const text = selected || (kind === 'bold' ? 'bold text' : 'italic text')
+      insert = `${mark}${text}${mark}`
+      select = [mark.length, mark.length + text.length]
+      break
+    }
+    default: {
+      // Line-level formats go at the start of the current line, on a fresh line if needed.
+      const prefix = kind === 'h2' ? '## ' : kind === 'h3' ? '### ' : '- '
+      const text = selected || (kind === 'list' ? 'List item' : 'Subheading')
+      before = body.slice(0, lineStart)
+      const rest = body.slice(lineStart, start)
+      insert = `${rest}${rest.trim() ? '\n' : ''}${prefix}${text}`
+      select = [insert.length - text.length, insert.length]
+    }
+  }
+
+  form.value.body = before + insert + body.slice(end)
+  const caret = before.length
+  requestAnimationFrame(() => {
+    textarea?.focus()
+    textarea?.setSelectionRange(caret + select[0], caret + select[1])
+  })
+}
+
 onMounted(async () => {
   await load()
   // Dashboard "Post news" shortcut
@@ -53,6 +106,7 @@ function openCreate() {
   editingId.value = null
   form.value = emptyForm()
   error.value = null
+  bodyTab.value = 'write'
   dialog.value = true
 }
 
@@ -67,6 +121,7 @@ function openEdit(item: NewsItem) {
     createdAt: item.createdAt ?? new Date().toISOString(),
   }
   error.value = null
+  bodyTab.value = 'write'
   dialog.value = true
 }
 
@@ -148,7 +203,41 @@ async function togglePublished(id: string, current: boolean) {
         <v-form id="news-form" @submit.prevent="handleSave">
           <v-text-field v-model="form.title" label="Title" required class="mb-2" />
           <v-text-field v-model="form.date" label="Date" type="date" required class="mb-2" />
-          <v-textarea v-model="form.body" label="Body" rows="6" auto-grow required class="mb-2" />
+          <div class="news-editor mb-4">
+            <div class="news-editor__bar">
+              <v-btn-toggle v-model="bodyTab" mandatory density="compact" variant="text" color="primary">
+                <v-btn value="write" size="small">Write</v-btn>
+                <v-btn value="preview" size="small">Preview</v-btn>
+              </v-btn-toggle>
+              <div v-if="bodyTab === 'write'" class="news-editor__tools">
+                <v-btn size="small" variant="text" title="Subheading" @click="format('h2')">H2</v-btn>
+                <v-btn size="small" variant="text" title="Smaller subheading" @click="format('h3')">H3</v-btn>
+                <v-btn size="small" variant="text" icon="mdi-format-bold" title="Bold" aria-label="Bold" @click="format('bold')" />
+                <v-btn size="small" variant="text" icon="mdi-format-italic" title="Italic" aria-label="Italic" @click="format('italic')" />
+                <v-btn size="small" variant="text" icon="mdi-link-variant" title="Link" aria-label="Link" @click="format('link')" />
+                <v-btn size="small" variant="text" icon="mdi-format-list-bulleted" title="Bullet list" aria-label="Bullet list" @click="format('list')" />
+              </div>
+            </div>
+            <v-textarea
+              v-show="bodyTab === 'write'"
+              ref="bodyField"
+              v-model="form.body"
+              label="Body"
+              rows="8"
+              auto-grow
+              required
+              hide-details="auto"
+            />
+            <div v-if="bodyTab === 'preview'" class="news-editor__preview">
+              <NewsBody v-if="form.body.trim()" :body="form.body" />
+              <p v-else class="text-body-2 text-body-readable mb-0">Nothing to preview yet.</p>
+            </div>
+            <p class="news-editor__help">
+              <code>## Subheading</code> · <code>[link text](https://…)</code> · <code>**bold**</code> ·
+              <code>*italic*</code> · <code>- bullet</code> · blank line = new paragraph. Plain web
+              addresses become links automatically.
+            </p>
+          </div>
           <ImageUploadField
             v-model="form.imageUrl"
             label="Featured image (optional)"
@@ -176,3 +265,46 @@ async function togglePublished(id: string, current: boolean) {
     </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.news-editor__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.news-editor__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem;
+}
+
+.news-editor__tools .v-btn {
+  font-weight: 700;
+}
+
+.news-editor__preview {
+  min-height: 12rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(var(--v-theme-primary), 0.2);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.news-editor__help {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--text-body);
+}
+
+.news-editor__help code {
+  font-size: 0.8125rem;
+  padding: 0 0.25rem;
+  border-radius: 3px;
+  background: rgba(var(--v-theme-primary), 0.06);
+}
+</style>

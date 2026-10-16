@@ -3,7 +3,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useNews } from '@/composables/useNews'
 import { formatLongDate } from '@/utils/date'
-import { linkifySegments, newsParagraphs } from '@/utils/news'
+import NewsBody from '@/components/NewsBody.vue'
 
 const route = useRoute()
 const { newsItems, load, loading, latestNews } = useNews()
@@ -11,7 +11,6 @@ const { newsItems, load, loading, latestNews } = useNews()
 const ordered = computed(() => latestNews(newsItems.value.length))
 const index = computed(() => ordered.value.findIndex((n) => n.id === route.params.id))
 const item = computed(() => ordered.value[index.value])
-const paragraphs = computed(() => newsParagraphs(item.value?.body ?? ''))
 
 /** Newer and older neighbours for in-article navigation. */
 const newer = computed(() => (index.value > 0 ? ordered.value[index.value - 1] : undefined))
@@ -36,16 +35,7 @@ onMounted(() => load(true))
         <img :src="item.imageUrl" :alt="item.title" />
       </figure>
 
-      <div class="news-article__body">
-        <p v-for="(paragraph, i) in paragraphs" :key="i">
-          <template v-for="(segment, j) in linkifySegments(paragraph)" :key="j">
-            <a v-if="segment.href" :href="segment.href" target="_blank" rel="noopener noreferrer">{{
-              segment.text
-            }}</a>
-            <template v-else>{{ segment.text }}</template>
-          </template>
-        </p>
-      </div>
+      <NewsBody :body="item.body" />
 
       <nav v-if="newer || older" class="news-article__nav" aria-label="More news">
         <router-link v-if="older" :to="`/news/${older.id}`" class="news-article__nav-link">
@@ -118,20 +108,6 @@ onMounted(() => load(true))
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid rgba(var(--v-theme-primary), 0.1);
-}
-
-.news-article__body p {
-  font-size: 1.0625rem;
-  line-height: 1.75;
-  color: var(--text-body);
-  white-space: pre-line;
-  margin: 0 0 1rem;
-}
-
-.news-article__body a {
-  color: var(--byu-royal) !important;
-  overflow-wrap: anywhere;
-  text-underline-offset: 3px;
 }
 
 .news-article__nav {
