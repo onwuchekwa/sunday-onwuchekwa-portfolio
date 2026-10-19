@@ -34,6 +34,14 @@ try {
   const news = (await listDocs('news')).filter((item) => item.published)
   const cv = (await getDoc('cv/main')) ?? {}
 
+  // The home page uses the title and description from Admin → Settings (the same ones the app
+  // sets once it loads), so previews never show stale text from index.html.
+  const homeTitle = [settings.name?.trim(), settings.title?.trim()].filter(Boolean).join(' | ')
+  const homeDescription = settings.tagline?.trim()
+  if (homeTitle && homeDescription) {
+    template = renderHead(template, { path: '/', title: homeTitle, description: homeDescription })
+  }
+
   // Every page carries the Person data, so the template gets it before the copies are made.
   template = template.replace('</head>', `${personJsonLd(settings, name, cv)}\n  </head>`)
   writeFileSync(join(DIST, 'index.html'), template)
