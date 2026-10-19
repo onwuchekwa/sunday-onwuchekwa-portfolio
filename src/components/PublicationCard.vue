@@ -87,8 +87,8 @@ const canShowAbstract = computed(() => props.showAbstract !== false && !!props.p
           target="_blank"
           rel="noopener noreferrer"
           size="small"
-          variant="tonal"
-          color="secondary"
+          variant="outlined"
+          class="pub-link"
           :prepend-icon="link.icon"
         >
           {{ link.label }}
@@ -118,10 +118,10 @@ const canShowAbstract = computed(() => props.showAbstract !== false && !!props.p
 <style scoped>
 .pub-badge {
   display: inline-block;
-  padding: 0.125rem 0.5rem;
+  padding: 0.0625rem 0.4375rem;
   border-radius: 4px;
-  background: rgb(var(--v-theme-primary));
-  color: #ffffff;
+  border: 1px solid var(--rule-strong);
+  color: var(--heading);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -130,12 +130,12 @@ const canShowAbstract = computed(() => props.showAbstract !== false && !!props.p
 }
 
 .pub-badge--review {
-  background: var(--byu-light-blue);
-  color: var(--byu-navy);
+  border-style: dashed;
+  color: var(--text-muted);
 }
 
 .pub-type {
-  color: var(--byu-royal);
+  color: var(--text-muted);
   font-size: 0.8125rem;
   font-weight: 500;
   font-style: italic;
@@ -150,7 +150,7 @@ const canShowAbstract = computed(() => props.showAbstract !== false && !!props.p
   font-weight: 600;
   line-height: 1.4;
   letter-spacing: -0.01em;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--text-strong);
   margin: 0 0 0.25rem;
 }
 
@@ -161,7 +161,7 @@ const canShowAbstract = computed(() => props.showAbstract !== false && !!props.p
 
 .pub-title-link:hover,
 .pub-title-link:focus-visible {
-  color: var(--byu-royal);
+  color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -175,12 +175,8 @@ const canShowAbstract = computed(() => props.showAbstract !== false && !!props.p
 }
 
 .pub-authors :deep(strong) {
-  color: var(--byu-navy);
+  color: var(--text-strong);
   font-weight: 600;
-  text-decoration: underline;
-  text-decoration-color: var(--byu-light-blue);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
 }
 
 .pub-venue {
@@ -192,12 +188,22 @@ const canShowAbstract = computed(() => props.showAbstract !== false && !!props.p
   text-transform: none;
 }
 
+.pub-link {
+  color: var(--text-body) !important;
+  border-color: var(--rule-strong) !important;
+}
+
+.pub-link:hover {
+  color: var(--accent) !important;
+  border-color: currentColor !important;
+}
+
 .pub-abstract {
   font-size: 0.9375rem;
   line-height: 1.65;
   color: var(--text-body);
   padding-left: 0.875rem;
-  border-left: 3px solid var(--byu-light-blue);
+  border-left: 3px solid var(--rule-strong);
 }
 
 .pub-thumb-wrap {
@@ -205,7 +211,7 @@ const canShowAbstract = computed(() => props.showAbstract !== false && !!props.p
   height: 88px;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid rgba(var(--v-theme-primary), 0.12);
+  border: 1px solid var(--rule);
 }
 
 .pub-thumb {

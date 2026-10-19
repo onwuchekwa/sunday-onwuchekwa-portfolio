@@ -94,7 +94,7 @@ onMounted(() => Promise.all([load(), loadSettings()]))
 }
 
 .pub-page-link {
-  color: var(--byu-royal) !important;
+  color: var(--accent) !important;
   font-weight: 500;
   text-underline-offset: 3px;
 }
@@ -107,19 +107,18 @@ onMounted(() => Promise.all([load(), loadSettings()]))
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
-  font-size: 1.375rem;
-  font-weight: 700;
-  color: var(--byu-navy);
+  font-size: 1.5rem;
+  color: var(--heading);
   padding-bottom: 0.5rem;
   margin-bottom: 0.25rem;
-  border-bottom: 2px solid var(--byu-light-blue);
+  border-bottom: 1px solid var(--rule-strong);
 }
 
 .pub-group-count {
+  font-family: var(--font-sans);
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--text-body);
-  opacity: 0.75;
+  color: var(--text-muted);
 }
 
 .pub-group-item {
@@ -127,7 +126,7 @@ onMounted(() => Promise.all([load(), loadSettings()]))
 }
 
 .pub-group-item + .pub-group-item {
-  border-top: 1px solid rgba(var(--v-theme-primary), 0.08);
+  border-top: 1px solid var(--rule);
 }
 
 :deep(.v-btn-toggle .v-btn) {

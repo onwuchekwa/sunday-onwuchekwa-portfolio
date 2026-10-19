@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import { useNews } from '@/composables/useNews'
 import { formatMonthYear } from '@/utils/date'
 import ProfileAvatar from '@/components/ProfileAvatar.vue'
+import SocialIcon from '@/components/SocialIcon.vue'
 
 const { settings, load: loadSettings } = useSiteSettings()
 const { load: loadNews, latestNews } = useNews()
 
-const newsVisible = computed(() => settings.value.pageVisibility.news !== false)
+const route = useRoute()
+
+/** The News page already lists every post, so the sidebar doesn't repeat them there. */
+const newsVisible = computed(
+  () => settings.value.pageVisibility.news !== false && route.name !== 'news',
+)
 const recentNews = computed(() => (newsVisible.value ? latestNews(3) : []))
 const socialLinks = computed(() => settings.value.socialLinks.filter((link) => link.url))
 
@@ -43,7 +50,7 @@ onMounted(() => Promise.all([loadSettings(), loadNews(true)]))
         <span>{{ settings.affiliation }}</span>
       </li>
       <li v-for="link in socialLinks" :key="link.url">
-        <v-icon :icon="link.icon || 'mdi-link-variant'" size="18" />
+        <SocialIcon :link="link" />
         <a :href="link.url" target="_blank" rel="noopener noreferrer">{{ link.platform }}</a>
       </li>
     </ul>
@@ -76,16 +83,17 @@ onMounted(() => Promise.all([loadSettings(), loadNews(true)]))
 }
 
 .profile-sidebar__name {
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-family: var(--font-serif);
+  font-size: 1.3125rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
   line-height: 1.3;
-  color: var(--byu-navy);
+  color: var(--heading);
   margin: 0 0 0.125rem;
 }
 
 .profile-sidebar__email {
-  color: var(--byu-royal) !important;
+  color: var(--accent) !important;
   font-size: 0.875rem;
   text-decoration: none;
   word-break: break-all;
@@ -110,8 +118,9 @@ onMounted(() => Promise.all([loadSettings(), loadNews(true)]))
   line-height: 1.4;
 }
 
-.profile-sidebar__facts .v-icon {
-  color: var(--byu-navy);
+.profile-sidebar__facts .v-icon,
+.profile-sidebar__facts svg {
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -120,22 +129,24 @@ onMounted(() => Promise.all([loadSettings(), loadNews(true)]))
 }
 
 .profile-sidebar__facts a:hover {
-  color: var(--byu-royal);
+  color: var(--accent);
   text-decoration: underline;
 }
 
 .profile-sidebar__news {
   margin-top: 1.75rem;
   padding-top: 1.25rem;
-  border-top: 1px solid rgba(var(--v-theme-primary), 0.12);
+  border-top: 1px solid var(--rule);
 }
 
 .profile-sidebar__heading {
+  font-family: var(--font-sans) !important;
+  font-weight: 700 !important;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--byu-navy);
+  color: var(--text-muted);
   margin: 0 0 0.75rem;
 }
 
@@ -159,14 +170,14 @@ onMounted(() => Promise.all([loadSettings(), loadNews(true)]))
 }
 
 .profile-sidebar__news li a:hover {
-  color: var(--byu-royal);
+  color: var(--accent);
   text-decoration: underline;
 }
 
 .profile-sidebar__date {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--byu-royal);
+  color: var(--text-muted);
 }
 
 .profile-sidebar__more {
@@ -175,7 +186,7 @@ onMounted(() => Promise.all([loadSettings(), loadNews(true)]))
   gap: 0.25rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--byu-royal) !important;
+  color: var(--accent) !important;
   text-decoration: none;
 }
 

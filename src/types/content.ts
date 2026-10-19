@@ -33,6 +33,8 @@ export interface SiteSettings {
   affiliation: string
   /** e.g. "Provo, Utah" */
   location: string
+  /** One-sentence statement of your research, the home page's main heading */
+  headline: string
   /** Optional highlighted callout on the home page (e.g. internship search) */
   announcement: string
   /** Optional "Beyond Research" paragraph on the home page */
@@ -243,6 +245,7 @@ export const defaultSiteSettings = (): SiteSettings => ({
   websiteUrl: 'https://sunday-onwuchekwa.web.app',
   affiliation: 'Brigham Young University',
   location: '',
+  headline: '',
   announcement: '',
   beyondResearch: '',
   socialLinks: [

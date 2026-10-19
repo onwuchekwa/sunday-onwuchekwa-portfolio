@@ -34,6 +34,7 @@ const blocks = computed(() => parseNewsBody(props.body))
   line-height: 1.75;
   color: var(--text-body);
   margin: 0 0 1rem;
+  max-width: 68ch;
 }
 
 .news-body__p {
@@ -52,7 +53,7 @@ const blocks = computed(() => parseNewsBody(props.body))
   font-size: 1.375rem;
   font-weight: 700;
   line-height: 1.3;
-  color: var(--byu-navy);
+  color: var(--heading);
   margin: 2rem 0 0.75rem;
 }
 
@@ -60,7 +61,7 @@ const blocks = computed(() => parseNewsBody(props.body))
   font-size: 1.125rem;
   font-weight: 700;
   line-height: 1.35;
-  color: var(--byu-navy);
+  color: var(--heading);
   margin: 1.5rem 0 0.5rem;
 }
 
@@ -69,12 +70,12 @@ const blocks = computed(() => parseNewsBody(props.body))
 }
 
 .news-body :deep(a) {
-  color: var(--byu-royal) !important;
+  color: var(--accent) !important;
   overflow-wrap: anywhere;
   text-underline-offset: 3px;
 }
 
 .news-body :deep(strong) {
-  color: var(--byu-navy);
+  color: var(--text-strong);
 }
 </style>

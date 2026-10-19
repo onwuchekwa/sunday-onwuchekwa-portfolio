@@ -290,17 +290,15 @@ export function resolveResearchInterestTitle(entry: Record<string, unknown>): st
 export interface ResearchInterestDisplay {
   title: string
   description: string
-  icon: string
+  /** Optional: a site path ("/news/…") or a full URL to a related paper or post. */
+  link: string
 }
 
-const DEFAULT_RESEARCH_ICON = 'mdi-lightbulb-outline'
-
 export function toResearchInterestDisplay(entry: Record<string, unknown>): ResearchInterestDisplay {
-  const icon = String(entry.icon ?? '').trim()
   return {
     title: resolveResearchInterestTitle(entry),
     description: String(entry.description ?? '').trim(),
-    icon: icon || DEFAULT_RESEARCH_ICON,
+    link: String(entry.link ?? '').trim(),
   }
 }
 

@@ -91,8 +91,8 @@ export const CV_SECTION_META: CvSectionMeta[] = [
     title: 'Research Interests',
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
-      { key: 'description', label: 'Description (home page Research Focus cards)', type: 'textarea' },
-      { key: 'icon', label: 'Icon (e.g. mdi-church)', type: 'text' },
+      { key: 'description', label: 'Description (one sentence, shown on the home page)', type: 'textarea' },
+      { key: 'link', label: 'Link (optional: a related paper URL or a page like /news/…)', type: 'text' },
     ],
   },
   {

@@ -78,12 +78,11 @@ onMounted(() => load(true))
 }
 
 .news-year__title {
-  font-size: 1.375rem;
-  font-weight: 700;
-  color: var(--byu-navy);
+  font-size: 1.5rem;
+  color: var(--heading);
   padding-bottom: 0.5rem;
   margin-bottom: 0.25rem;
-  border-bottom: 2px solid var(--byu-light-blue);
+  border-bottom: 1px solid var(--rule-strong);
 }
 
 .news-list {
@@ -100,14 +99,14 @@ onMounted(() => load(true))
 }
 
 .news-item + .news-item {
-  border-top: 1px solid rgba(var(--v-theme-primary), 0.08);
+  border-top: 1px solid var(--rule);
 }
 
 .news-item__date {
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.6;
-  color: var(--byu-royal);
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -115,13 +114,13 @@ onMounted(() => load(true))
   font-size: 1.0625rem;
   font-weight: 600;
   line-height: 1.45;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--text-strong);
   text-decoration: none;
 }
 
 .news-item__title:hover,
 .news-item__title:focus-visible {
-  color: var(--byu-royal);
+  color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 3px;
 }

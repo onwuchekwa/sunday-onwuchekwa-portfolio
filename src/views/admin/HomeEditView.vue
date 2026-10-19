@@ -53,6 +53,16 @@ async function handleSave() {
     <v-card class="pa-6">
       <v-form id="home-form" @submit.prevent="handleSave">
         <v-textarea
+          v-model="settings.headline"
+          label="Headline"
+          rows="2"
+          auto-grow
+          hint="The large statement at the top of your home page: what you study, in one sentence. Leave empty to show “Hi, I’m …”."
+          persistent-hint
+          class="mb-6"
+        />
+
+        <v-textarea
           v-model="settings.announcement"
           label="Announcement (optional)"
           rows="2"

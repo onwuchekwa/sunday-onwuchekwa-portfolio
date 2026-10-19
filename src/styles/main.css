@@ -1,16 +1,30 @@
 /*
  * Fonts are loaded from index.html (preconnect + stylesheet) so they don't block CSS parsing.
- * Inter for the site; Lora and Source Sans 3 stay loaded for the CV/PDF layout.
+ * Inter for text, Lora for public-site headings (and the CV, with Source Sans 3).
  */
 :root {
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Lora', Georgia, 'Times New Roman', serif;
   --v-font-body: var(--font-sans);
   --v-font-heading: var(--font-sans);
   font-family: var(--font-sans);
   --byu-navy: #002E5D;
   --byu-royal: #0047BA;
   --byu-light-blue: #BDD6E6;
-  --text-body: #3E4C59;
+
+  /*
+   * Color roles. Navy is for headings and the brand mark; royal blue is the one accent,
+   * kept for links and actions. Everything else is warm neutrals.
+   */
+  --paper: #FAF8F4;
+  --heading: var(--byu-navy);
+  --accent: var(--byu-royal);
+  --text-strong: #1F2328;
+  --text-body: #454B52;
+  --text-muted: #6E6A63;
+  --rule: #E7E1D7;
+  --rule-strong: #D3CABB;
+  --tint: #F2EDE4;
 }
 
 html {
@@ -31,6 +45,13 @@ h1, h2, h3, h4, h5, h6,
   font-family: var(--font-sans);
   letter-spacing: -0.015em;
   line-height: 1.25;
+}
+
+/* Public pages set page and section headings in the serif. */
+.site-public :is(h1, h2) {
+  font-family: var(--font-serif);
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
 }
 
 .text-h1 { font-size: clamp(2.25rem, 1.8rem + 1.8vw, 3rem); line-height: 1.15; letter-spacing: -0.025em; }
@@ -85,14 +106,14 @@ a:not(.v-btn) {
 }
 
 :focus-visible {
-  outline: 2px solid var(--byu-royal);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* BYU mist page background; also on <html> so overscroll areas match. */
+/* Warm paper background; also on <html> so overscroll areas match. */
 html,
 body {
-  background: #F3F7FA;
+  background: var(--paper);
 }
 
 /* ---- Admin shared styles ---- */

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useSiteSettings } from '@/composables/useSiteSettings'
+import SocialIcon from '@/components/SocialIcon.vue'
 
 const { settings, load } = useSiteSettings()
 const year = new Date().getFullYear()
@@ -11,7 +12,7 @@ onMounted(load)
 </script>
 
 <template>
-  <v-footer class="app-footer" color="surface">
+  <v-footer class="app-footer" color="background">
     <div class="app-footer__inner">
       <div class="app-footer__contact">
         <a v-if="settings.email" :href="`mailto:${settings.email}`" class="app-footer__email">
@@ -19,19 +20,17 @@ onMounted(load)
           {{ settings.email }}
         </a>
         <nav v-if="socialLinks.length" class="app-footer__social" aria-label="Profiles">
-          <v-btn
+          <a
             v-for="link in socialLinks"
             :key="link.url"
             :href="link.url"
             target="_blank"
             rel="noopener noreferrer"
-            :icon="link.icon || 'mdi-link-variant'"
-            :aria-label="link.platform"
-            :title="link.platform"
-            variant="text"
-            size="small"
-            color="primary"
-          />
+            class="app-footer__link"
+          >
+            <SocialIcon :link="link" :size="16" />
+            {{ link.platform }}
+          </a>
         </nav>
       </div>
       <p class="app-footer__copy">
@@ -42,12 +41,12 @@ onMounted(load)
 </template>
 
 <style scoped>
-/* Matches the header: white with a hairline rule; navy is the accent, not the fill. */
+/* Matches the header: paper background with a hairline rule. */
 .app-footer {
   flex: 0 0 auto;
   padding: 1.25rem 0;
   margin-top: 3rem;
-  border-top: 1px solid rgba(var(--v-theme-primary), 0.12);
+  border-top: 1px solid var(--rule);
 }
 
 .app-footer__inner {
@@ -81,7 +80,7 @@ onMounted(load)
   gap: 0.375rem;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: var(--byu-navy) !important;
+  color: var(--text-strong) !important;
   text-decoration: none;
 }
 
@@ -92,13 +91,31 @@ onMounted(load)
 
 .app-footer__social {
   display: flex;
-  gap: 0.125rem;
-  margin-left: -0.5rem;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.app-footer__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--text-body) !important;
+  text-decoration: none;
+}
+
+.app-footer__link svg,
+.app-footer__link .v-icon {
+  color: var(--text-muted);
+}
+
+.app-footer__link:hover {
+  color: var(--accent) !important;
 }
 
 .app-footer__copy {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--text-body);
+  color: var(--text-muted);
 }
 </style>

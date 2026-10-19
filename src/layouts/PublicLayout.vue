@@ -14,7 +14,7 @@ const isHome = computed(() => route.name === 'home')
 </script>
 
 <template>
-  <v-app>
+  <v-app class="site-public">
     <AppHeader />
     <v-main class="bg-background">
       <div class="public-shell" :class="{ 'public-shell--full': fullWidth }">
@@ -39,7 +39,7 @@ const isHome = computed(() => route.name === 'home')
 
 .public-shell__aside {
   padding: 1.5rem 0 0.5rem;
-  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.1);
+  border-bottom: 1px solid var(--rule);
 }
 
 .public-shell__content {

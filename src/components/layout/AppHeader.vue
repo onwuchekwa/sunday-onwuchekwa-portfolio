@@ -22,7 +22,7 @@ onMounted(load)
 </script>
 
 <template>
-  <v-app-bar flat color="surface" height="60" class="app-header">
+  <v-app-bar flat color="background" height="60" class="app-header">
     <div class="app-header__inner d-flex align-center">
       <router-link to="/" class="app-header__brand">{{ settings.name }}</router-link>
 
@@ -61,8 +61,8 @@ onMounted(load)
 
 <style scoped>
 .app-header {
-  border-top: 4px solid var(--byu-navy);
-  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.12) !important;
+  border-top: 3px solid var(--heading);
+  border-bottom: 1px solid var(--rule) !important;
 }
 
 .app-header__inner {
@@ -79,10 +79,11 @@ onMounted(load)
 }
 
 .app-header__brand {
-  font-size: 1.0625rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--byu-navy) !important;
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--heading) !important;
   text-decoration: none;
 }
 
@@ -98,12 +99,12 @@ onMounted(load)
 }
 
 .app-header__link:hover {
-  color: var(--byu-navy) !important;
-  background: rgba(var(--v-theme-primary), 0.05);
+  color: var(--text-strong) !important;
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .app-header__link--active {
-  color: var(--byu-navy) !important;
+  color: var(--text-strong) !important;
   font-weight: 600;
 }
 
@@ -113,8 +114,8 @@ onMounted(load)
   left: 0.75rem;
   right: 0.75rem;
   bottom: -0.6rem;
-  height: 3px;
+  height: 2px;
   border-radius: 2px;
-  background: var(--byu-royal);
+  background: var(--heading);
 }
 </style>
