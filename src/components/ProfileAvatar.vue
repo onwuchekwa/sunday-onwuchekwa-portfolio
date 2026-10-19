@@ -21,6 +21,8 @@ withDefaults(
       v-if="imageUrl"
       :src="imageUrl"
       cover
+      eager
+      :transition="false"
       position="center center"
       alt="Profile photo"
     />

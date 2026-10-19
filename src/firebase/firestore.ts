@@ -21,11 +21,12 @@ import {
 } from '@/types/content'
 import type { CvDocument } from '@/types/cv'
 import { normalizeAuthors } from '@/utils/cvFormat'
+import { trackLoad } from '@/utils/contentReady'
 
 const db = () => getFirebaseDb()
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
-  const snap = await getDoc(doc(db(), 'siteSettings', 'main'))
+  const snap = await trackLoad(getDoc(doc(db(), 'siteSettings', 'main')))
   return snap.exists() ? (snap.data() as SiteSettings) : null
 }
 
@@ -34,7 +35,7 @@ export async function saveSiteSettings(data: SiteSettings): Promise<void> {
 }
 
 export async function getAbout(): Promise<About | null> {
-  const snap = await getDoc(doc(db(), 'about', 'main'))
+  const snap = await trackLoad(getDoc(doc(db(), 'about', 'main')))
   return snap.exists() ? (snap.data() as About) : null
 }
 
@@ -44,7 +45,7 @@ export async function saveAbout(data: About): Promise<void> {
 
 export async function getPublications(): Promise<Publication[]> {
   const q = query(collection(db(), 'publications'), orderBy('year', 'desc'))
-  const snap = await getDocs(q)
+  const snap = await trackLoad(getDocs(q))
   return snap.docs.map((d) => {
     const data = d.data()
     return {
@@ -73,7 +74,7 @@ export async function deletePublication(id: string): Promise<void> {
 
 export async function getNewsItems(): Promise<NewsItem[]> {
   const q = query(collection(db(), 'news'), orderBy('date', 'desc'))
-  const snap = await getDocs(q)
+  const snap = await trackLoad(getDocs(q))
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as NewsItem))
 }
 
@@ -92,7 +93,7 @@ export async function deleteNewsItem(id: string): Promise<void> {
 }
 
 export async function getCvDocument(): Promise<CvDocument | null> {
-  const snap = await getDoc(doc(db(), 'cv', 'main'))
+  const snap = await trackLoad(getDoc(doc(db(), 'cv', 'main')))
   return snap.exists() ? (snap.data() as CvDocument) : null
 }
 

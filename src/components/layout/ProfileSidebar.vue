@@ -198,5 +198,10 @@ onMounted(() => Promise.all([loadSettings(), loadNews(true)]))
   .profile-sidebar__facts {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
+
+  /* Keep the intro near the top; News is one tap away in the menu. */
+  .profile-sidebar__news {
+    display: none;
+  }
 }
 </style>

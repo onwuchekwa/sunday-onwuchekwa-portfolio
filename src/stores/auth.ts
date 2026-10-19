@@ -1,12 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import {
+  getAuth,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
   type User,
 } from 'firebase/auth'
-import { getFirebaseAuth, isFirebaseConfigured } from '@/firebase/config'
+import { getFirebaseApp, isFirebaseConfigured } from '@/firebase/config'
+
+/** Only the admin host imports this store, so public visitors never download Firebase Auth. */
+const getFirebaseAuth = () => getAuth(getFirebaseApp())
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)

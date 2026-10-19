@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import { loadSiteSettingsOnce } from '@/composables/useSiteSettings'
 import type { PublicPageId } from '@/types/content'
 import { adminSiteOrigin, isAdminHost } from '@/utils/hosts'
@@ -66,7 +65,7 @@ const publicRoutes: RouteRecordRaw[] = [
         path: ':pathMatch(.*)*',
         name: 'not-found',
         component: () => import('@/views/NotFoundView.vue'),
-        meta: { head: { title: 'Page not found' } },
+        meta: { head: { title: 'Page not found', noindex: true } },
       },
     ],
   },
@@ -111,20 +110,24 @@ router.beforeEach(async (to) => {
     return false
   }
 
-  const auth = useAuthStore()
-  await auth.waitUntilReady()
+  if (isAdminHost) {
+    const { useAuthStore } = await import('@/stores/auth')
+    const auth = useAuthStore()
+    await auth.waitUntilReady()
 
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: 'admin-login', query: { redirect: to.fullPath } }
+    if (to.meta.requiresAuth && !auth.isAuthenticated) {
+      return { name: 'admin-login', query: { redirect: to.fullPath } }
+    }
+
+    if (to.meta.guest && auth.isAuthenticated) {
+      return { name: 'admin-dashboard' }
+    }
+    return
   }
 
-  if (to.meta.guest && auth.isAuthenticated) {
-    return { name: 'admin-dashboard' }
-  }
-
-  // Hidden public pages 404 for visitors; admins can still preview them.
+  // Hidden public pages 404. Admins sign in on the admin host, so nobody is signed in here.
   const page = to.meta.page as PublicPageId | undefined
-  if (!isAdminHost && page && !auth.isAuthenticated) {
+  if (page) {
     const settings = await loadSiteSettingsOnce()
     if (settings.pageVisibility[page] === false) {
       return { name: 'not-found' }

@@ -9,6 +9,8 @@ export interface PageHead {
   title?: string
   /** A function receives the site owner's name once settings have loaded. */
   description?: string | ((name: string) => string)
+  /** Keep the page out of search results (e.g. the not-found page, which Hosting serves as 200). */
+  noindex?: boolean
 }
 
 let siteSettings: HeadSettings | null = null
@@ -48,6 +50,10 @@ function renderHead(): void {
   if (description) setMeta('description', description)
 
   setCanonical(publicSiteOrigin + location.pathname)
+
+  const robots = document.querySelector('meta[name="robots"]')
+  if (pageHead.noindex && !robots) setMeta('robots', 'noindex')
+  else if (!pageHead.noindex) robots?.remove()
 }
 
 function setMeta(name: string, content: string): void {
