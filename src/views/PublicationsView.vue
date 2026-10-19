@@ -3,12 +3,24 @@ import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePublications } from '@/composables/usePublications'
 import { useSiteSettings } from '@/composables/useSiteSettings'
+import { useCv } from '@/composables/useCv'
+import { toResearchInterestDisplay } from '@/utils/cvFormat'
 import { groupPublications, type PublicationGrouping } from '@/utils/publicationGroups'
 import PublicationCard from '@/components/PublicationCard.vue'
 import UnderConstruction from '@/components/UnderConstruction.vue'
 
 const { publications, load, loading, error } = usePublications()
 const { settings, load: loadSettings } = useSiteSettings()
+const { cv, load: loadCv, visibleEntries } = useCv()
+
+const themes = computed(() => {
+  const section = cv.value.sections.find((s) => s.id === 'researchInterests')
+  return section ? visibleEntries(section).map(toResearchInterestDisplay).filter((t) => t.title) : []
+})
+
+function tagsFor(themeIds: string[] | undefined) {
+  return themes.value.filter((t) => themeIds?.includes(t.id))
+}
 const route = useRoute()
 const router = useRouter()
 
@@ -32,7 +44,7 @@ watch(error, (e) => {
   if (e) router.replace({ name: 'error', query: { code: '503', from: route.fullPath } })
 })
 
-onMounted(() => Promise.all([load(), loadSettings()]))
+onMounted(() => Promise.all([load(), loadSettings(), loadCv()]))
 </script>
 
 <template>
@@ -76,6 +88,7 @@ onMounted(() => Promise.all([load(), loadSettings()]))
           v-for="pub in group.publications"
           :key="pub.id"
           :publication="pub"
+          :themes="tagsFor(pub.themes)"
           class="pub-group-item"
         />
       </section>

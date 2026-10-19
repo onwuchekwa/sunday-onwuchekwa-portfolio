@@ -222,6 +222,8 @@ export interface Publication {
   thumbnailUrl?: string
   /** Link to the publication source page (ACM DL, DOI landing page, etc.) */
   sourceUrl?: string
+  /** Research theme ids (from CV Research Interests) this paper belongs to */
+  themes?: string[]
   createdAt?: string
 }
 

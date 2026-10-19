@@ -49,7 +49,13 @@ const selectedPublications = computed(() => {
   return [...featured, ...others].slice(0, SELECTED_PUBLICATION_COUNT)
 })
 
-const researchThemes = computed(() => props.researchThemes)
+/** Each theme with how many papers carry its tag; only themes with papers link anywhere. */
+const researchThemes = computed(() =>
+  props.researchThemes.map((theme) => ({
+    ...theme,
+    count: props.publications.filter((p) => p.themes?.includes(theme.id)).length,
+  })),
+)
 
 const scholarUrl = computed(
   () =>
@@ -89,8 +95,21 @@ const pageVisible = computed(() => settings.value.pageVisibility)
       <ol class="home-themes">
         <li v-for="(theme, index) in researchThemes" :key="theme.title" class="home-theme">
           <span class="home-theme__number" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span>
-          <h3 class="home-theme__title">{{ theme.title }}</h3>
+          <h3 class="home-theme__title">
+            <router-link
+              v-if="theme.count && pageVisible.publications !== false"
+              :to="`/research/${theme.slug}`"
+              class="home-theme__link"
+            >
+              {{ theme.title }}
+            </router-link>
+            <template v-else>{{ theme.title }}</template>
+          </h3>
           <p v-if="theme.description" class="home-theme__text">{{ theme.description }}</p>
+          <p v-if="theme.count && pageVisible.publications !== false" class="home-theme__more" aria-hidden="true">
+            {{ theme.count }} {{ theme.count === 1 ? 'paper' : 'papers' }}
+            <v-icon icon="mdi-arrow-right" size="14" />
+          </p>
         </li>
       </ol>
     </section>
@@ -235,10 +254,20 @@ const pageVisible = computed(() => settings.value.pageVisibility)
 }
 
 .home-theme {
+  position: relative;
   padding: 1.25rem 1.25rem 1.375rem;
   border: 1px solid var(--rule);
   border-radius: 10px;
   background: rgb(var(--v-theme-surface));
+}
+
+.home-theme:has(.home-theme__link) {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.home-theme:has(.home-theme__link):hover {
+  border-color: var(--rule-strong);
+  box-shadow: 0 4px 16px rgba(31, 35, 40, 0.06);
 }
 
 .home-theme__number {
@@ -259,6 +288,38 @@ const pageVisible = computed(() => settings.value.pageVisibility)
   line-height: 1.3;
   letter-spacing: -0.005em;
   color: var(--heading);
+}
+
+.home-theme__link {
+  color: inherit !important;
+  text-decoration: none;
+}
+
+/* The whole card is the link's click target. */
+.home-theme__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.home-theme__link:focus-visible {
+  outline: none;
+}
+
+.home-theme:has(.home-theme__link:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.home-theme__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent);
 }
 
 .home-theme__text {

@@ -8,6 +8,7 @@ import UnsavedChangesBar from '@/components/admin/UnsavedChangesBar.vue'
 import { useNotify } from '@/composables/useNotify'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import { CV_SECTION_META, entryToFormValues, isEntryVisible, type CvSectionId } from '@/types/cv'
+import { slugify } from '@/utils/cvFormat'
 
 const { cv, load, save, loading } = useCv()
 const activeTab = ref<CvSectionId>('researchInterests')
@@ -78,7 +79,7 @@ const sectionGuidance = computed(() => {
     case 'researchInterests':
       return {
         type: 'info' as const,
-        text: 'Each entry is a card in the Research section of your home page and an item in the Research Interests line on your CV. Drag to set their order.',
+        text: 'Each entry is a card in the Research section of your home page and an item in the Research Interests line on your CV. Drag to set their order. Tag papers with these themes in the publication editor to give each one its own page.',
       }
     case 'education':
       return {
@@ -144,9 +145,19 @@ function saveEntry() {
   const section = activeSection.value
   if (!section) return
 
+  const existing = editingEntryIndex.value !== null ? section.entries[editingEntryIndex.value] : {}
   const entry: Record<string, unknown> = {
+    ...existing,
     ...entryForm.value,
     visible: entryVisible.value,
+  }
+  // New research themes get their tag id now; existing ones keep theirs through renames.
+  if (section.id === 'researchInterests' && !entry.id) {
+    const base = slugify(String(entry.title ?? '')) || 'theme'
+    const taken = new Set(section.entries.map((e) => e.id))
+    let id = base
+    for (let n = 2; taken.has(id); n++) id = `${base}-${n}`
+    entry.id = id
   }
   if (editingEntryIndex.value !== null) {
     section.entries[editingEntryIndex.value] = entry

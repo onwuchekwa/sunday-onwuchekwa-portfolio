@@ -90,6 +90,21 @@ const tasks = computed<Task[]>(() => {
     }
   }
 
+  const research = cv.value.sections.find((sec) => sec.id === 'researchInterests')
+  const untagged = publications.value.filter((p) => !p.themes?.length)
+  if (research?.entries.length && untagged.length) {
+    list.push({
+      id: 'themes',
+      text:
+        untagged.length === 1
+          ? `Tag “${untagged[0].title.length > 50 ? `${untagged[0].title.slice(0, 47)}…` : untagged[0].title}” with a research theme`
+          : `Tag ${untagged.length} papers with research themes`,
+      detail: 'Tagged themes on your home page open a page of their papers.',
+      to: untagged.length === 1 ? { name: 'admin-publication-edit', params: { id: untagged[0].id } } : { name: 'admin-publications' },
+      action: untagged.length === 1 ? 'Edit paper' : 'Open publications',
+    })
+  }
+
   const drafts = newsItems.value.filter((n) => !n.published)
   if (drafts.length) {
     list.push({

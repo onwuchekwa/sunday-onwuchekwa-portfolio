@@ -2,12 +2,13 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePublications } from '@/composables/usePublications'
+import { useCv } from '@/composables/useCv'
 import { useNotify } from '@/composables/useNotify'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import { isSameAuthor, parseAuthorList } from '@/utils/authors'
 import { extractDoi, fetchDoiDetails } from '@/utils/crossref'
-import { normalizeAuthors } from '@/utils/cvFormat'
+import { normalizeAuthors, toResearchInterestDisplay } from '@/utils/cvFormat'
 import { PUBLICATION_THUMBNAIL_MAX_BYTES } from '@/utils/imageToBase64'
 import { pdfPageToThumbnail, readablePdfUrl, type PdfCrop } from '@/utils/pdfThumbnail'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
@@ -28,6 +29,7 @@ const router = useRouter()
 const notify = useNotify()
 const { publications, load, create, update } = usePublications()
 const { settings, load: loadSettings } = useSiteSettings()
+const { cv, load: loadCv, visibleEntries } = useCv()
 
 /** Undefined on /publications/new. */
 const editingId = computed(() => (route.params.id as string | undefined) ?? null)
@@ -59,6 +61,7 @@ const emptyForm = (): Omit<Publication, 'id'> => ({
   isJournalModel: false,
   thumbnailUrl: '',
   sourceUrl: '',
+  themes: [],
   createdAt: new Date().toISOString(),
 })
 
@@ -72,7 +75,7 @@ const typeItems = PUBLICATION_TYPES.map((t) => ({ title: t.title, value: t.value
 const venueBadgePreview = computed(() => resolveVenueShort(form.value))
 
 onMounted(async () => {
-  await Promise.all([load(), loadSettings()])
+  await Promise.all([load(), loadSettings(), loadCv()])
   if (editingId.value) {
     const pub = publications.value.find((p) => p.id === editingId.value)
     if (!pub) {
@@ -93,6 +96,7 @@ onMounted(async () => {
         isJournalModel: pub.isJournalModel ?? false,
         thumbnailUrl: pub.thumbnailUrl ?? '',
         sourceUrl: pub.sourceUrl ?? '',
+        themes: [...(pub.themes ?? [])],
         createdAt: pub.createdAt ?? new Date().toISOString(),
       }
       delete (form.value as Partial<Publication>).id
@@ -118,8 +122,17 @@ const previewPublication = computed<Publication>(() => ({
 }))
 const previewAbstractOpen = ref(true)
 
+/** The CV's research interests, used as tags. */
+const themes = computed(() => {
+  const section = cv.value.sections.find((s) => s.id === 'researchInterests')
+  return section ? visibleEntries(section).map(toResearchInterestDisplay).filter((t) => t.title) : []
+})
+
 const placements = computed(() => {
   const list = ['Publications page']
+  for (const theme of themes.value) {
+    if (form.value.themes?.includes(theme.id)) list.push(`${theme.title} page`)
+  }
   if (form.value.featured) list.push('Home page (Selected Publications)')
   if (form.value.includeInCv) list.push('CV')
   return list
@@ -605,6 +618,25 @@ async function handleSave() {
           <!-- Placement -->
           <section id="pub-placement" class="pub-editor__section">
             <h2 class="pub-editor__section-title">Where it shows</h2>
+            <p class="pub-editor__label">Research themes</p>
+            <p class="pub-editor__help mb-2">
+              Each theme on your home page leads to a page of the papers tagged with it.
+            </p>
+            <v-chip-group v-if="themes.length" v-model="form.themes" multiple column class="mb-4">
+              <v-chip
+                v-for="theme in themes"
+                :key="theme.id"
+                :value="theme.id"
+                filter
+                variant="outlined"
+                color="primary"
+              >
+                {{ theme.title }}
+              </v-chip>
+            </v-chip-group>
+            <p v-else class="pub-editor__help mb-4">
+              Add research interests in the <router-link :to="{ name: 'admin-cv' }">CV Builder</router-link> to tag papers.
+            </p>
             <v-switch
               v-model="form.featured"
               label="Feature on the home page"
@@ -778,6 +810,13 @@ async function handleSave() {
   font-size: 1.0625rem;
   font-weight: 700;
   color: var(--byu-navy);
+}
+
+.pub-editor__label {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-strong);
 }
 
 .pub-editor__help {

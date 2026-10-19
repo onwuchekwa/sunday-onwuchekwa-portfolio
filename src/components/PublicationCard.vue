@@ -12,6 +12,8 @@ import AuthorList from '@/components/AuthorList.vue'
 const props = defineProps<{
   publication: Publication
   showAbstract?: boolean
+  /** Research themes to show as tag links under the paper. */
+  themes?: { id: string; slug: string; title: string }[]
 }>()
 
 const abstractOpen = ref(false)
@@ -94,6 +96,12 @@ const canShowAbstract = computed(() => props.showAbstract !== false && !!props.p
           {{ link.label }}
         </v-btn>
       </div>
+
+      <p v-if="themes?.length" class="pub-themes">
+        <router-link v-for="theme in themes" :key="theme.id" :to="`/research/${theme.slug}`" class="pub-theme">
+          {{ theme.title }}
+        </router-link>
+      </p>
 
       <v-expand-transition>
         <p v-if="canShowAbstract && abstractOpen" class="pub-abstract mt-3 mb-0">
@@ -196,6 +204,28 @@ const canShowAbstract = computed(() => props.showAbstract !== false && !!props.p
 .pub-link:hover {
   color: var(--accent) !important;
   border-color: currentColor !important;
+}
+
+.pub-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.625rem 0 0;
+}
+
+.pub-theme {
+  padding: 0.0625rem 0.625rem;
+  border-radius: 999px;
+  background: var(--tint);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-body) !important;
+  text-decoration: none;
+}
+
+.pub-theme:hover {
+  color: var(--accent) !important;
+  text-decoration: underline;
 }
 
 .pub-abstract {

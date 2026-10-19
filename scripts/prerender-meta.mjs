@@ -67,6 +67,23 @@ try {
     },
   ].filter((p) => pageVisibility[p.page] !== false)
 
+  // One page per research theme that has tagged papers (see src/views/ResearchThemeView.vue).
+  if (pageVisibility.publications !== false) {
+    const publications = await listDocs('publications')
+    const research = (cv.sections ?? []).find((section) => section.id === 'researchInterests')
+    for (const entry of research?.entries ?? []) {
+      const title = String(entry.title ?? entry.text ?? '').trim()
+      if (!title || entry.visible === false) continue
+      const id = String(entry.id ?? '').trim() || slugify(title)
+      if (!publications.some((pub) => (pub.themes ?? []).includes(id))) continue
+      pages.push({
+        path: `/research/${slugify(title)}`,
+        title: `${title} | ${name}`,
+        description: String(entry.description ?? '').trim() || `Publications by ${name} on ${title}.`,
+      })
+    }
+  }
+
   if (pageVisibility.news !== false) {
     for (const item of news) {
       pages.push({
@@ -245,6 +262,17 @@ function decodeValue(value) {
 }
 
 // ---- helpers ----
+
+/** Same as slugify() in src/utils/cvFormat.ts, so URLs match the app's. */
+function slugify(text) {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
 
 function escapeAttr(text) {
   return String(text).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')

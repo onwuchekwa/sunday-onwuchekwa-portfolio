@@ -26,6 +26,13 @@ const publicRoutes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'research/:slug',
+        name: 'research-theme',
+        component: () => import('@/views/ResearchThemeView.vue'),
+        // A theme page is part of Publications: hidden when that page is.
+        meta: { page: 'publications', head: { title: 'Research' } },
+      },
+      {
         path: 'news',
         name: 'news',
         component: () => import('@/views/NewsView.vue'),

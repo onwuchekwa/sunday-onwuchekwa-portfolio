@@ -277,10 +277,26 @@ export function normalizeInstitutionEntry(entry: Record<string, unknown>): Recor
   return { ...entry, institution, location }
 }
 
+/** URL-friendly form of a title: "Faith & Technology" → "faith-and-technology". */
+export function slugify(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/**
+ * Research interests double as publication tags. Each keeps a stable `id` (first taken from
+ * its title) so renaming a theme later doesn't untag its papers.
+ */
 export function normalizeResearchInterestEntry(entry: Record<string, unknown>): Record<string, unknown> {
   const title = resolveResearchInterestTitle(entry)
   const { text: _legacyText, ...rest } = entry
-  return title ? { ...rest, title } : { ...rest }
+  const id = String(rest.id ?? '').trim() || slugify(title)
+  return title ? { ...rest, title, ...(id ? { id } : {}) } : { ...rest }
 }
 
 export function resolveResearchInterestTitle(entry: Record<string, unknown>): string {
@@ -288,13 +304,20 @@ export function resolveResearchInterestTitle(entry: Record<string, unknown>): st
 }
 
 export interface ResearchInterestDisplay {
+  /** Stable; what publications store in `themes`. */
+  id: string
+  /** From the current title; used in /research/<slug>. */
+  slug: string
   title: string
   description: string
 }
 
 export function toResearchInterestDisplay(entry: Record<string, unknown>): ResearchInterestDisplay {
+  const title = resolveResearchInterestTitle(entry)
   return {
-    title: resolveResearchInterestTitle(entry),
+    id: String(entry.id ?? '').trim() || slugify(title),
+    slug: slugify(title),
+    title,
     description: String(entry.description ?? '').trim(),
   }
 }
