@@ -1,6 +1,7 @@
 /**
  * Look up a paper's details by DOI from Crossref's free public API (no key needed; ACM, IEEE,
- * Springer, and most publishers register their DOIs there).
+ * Springer, and most publishers register their DOIs there), with the abstract from Semantic
+ * Scholar or OpenAlex when Crossref doesn't have one.
  */
 import type { PublicationType } from '@/types/content'
 
@@ -53,6 +54,9 @@ export async function fetchDoiDetails(doi: string): Promise<DoiDetails> {
   const work = ((await response.json()) as { message: CrossrefWork }).message
   const year = work.issued?.['date-parts']?.[0]?.[0] ?? work.published?.['date-parts']?.[0]?.[0] ?? null
 
+  // Crossref often has no abstract (ACM rarely deposits one); other indexes usually do.
+  const abstract = plainText(work.abstract ?? '') || (await fetchAbstractElsewhere(doi))
+
   return {
     doi,
     title: plainText(work.title?.[0] ?? ''),
@@ -62,9 +66,42 @@ export async function fetchDoiDetails(doi: string): Promise<DoiDetails> {
       .filter(Boolean),
     venue: plainText(work['container-title']?.[0] || work.event?.name || ''),
     year,
-    abstract: plainText(work.abstract ?? ''),
+    abstract,
     type: work.type === 'journal-article' ? 'journal' : null,
   }
+}
+
+/** Semantic Scholar first, then OpenAlex. Missing or failing lookups just give no abstract. */
+async function fetchAbstractElsewhere(doi: string): Promise<string> {
+  try {
+    const response = await fetch(
+      `https://api.semanticscholar.org/graph/v1/paper/DOI:${doi.split('/').map(encodeURIComponent).join('/')}?fields=abstract`,
+    )
+    if (response.ok) {
+      const abstract = plainText(((await response.json()) as { abstract?: string | null }).abstract ?? '')
+      if (abstract) return abstract
+    }
+  } catch {
+    // Try the next source.
+  }
+  try {
+    const response = await fetch(`https://api.openalex.org/works/doi:${doi.split('/').map(encodeURIComponent).join('/')}`)
+    if (response.ok) {
+      const index = ((await response.json()) as { abstract_inverted_index?: Record<string, number[]> | null })
+        .abstract_inverted_index
+      if (index) {
+        // OpenAlex stores the abstract as word → positions.
+        const words: string[] = []
+        for (const [word, positions] of Object.entries(index)) {
+          for (const position of positions) words[position] = word
+        }
+        return plainText(words.join(' '))
+      }
+    }
+  } catch {
+    // No abstract available.
+  }
+  return ''
 }
 
 /** Crossref titles and abstracts can carry JATS/HTML markup. */

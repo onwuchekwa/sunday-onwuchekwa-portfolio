@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { SiteSettings } from '@/types/content'
+import { publicSiteOrigin } from '@/utils/hosts'
 
 const props = defineProps<{
   settings: SiteSettings
@@ -8,13 +9,11 @@ const props = defineProps<{
   keywords?: string[]
 }>()
 
-const phone = computed(() => props.settings.phone?.trim() ?? '')
-
 /** Labeled profile links (Personal Website | Google Scholar | …), skipping placeholder URLs. */
 const links = computed(() => {
   const items: { label: string; href: string; icon: string }[] = []
-  const website = props.settings.websiteUrl?.trim()
-  if (website) items.push({ label: 'Personal Website', href: website, icon: 'mdi-web' })
+  // The CV lives on the personal site, so that's always the website it links to.
+  items.push({ label: 'Personal Website', href: publicSiteOrigin, icon: 'mdi-web' })
   for (const link of props.settings.socialLinks ?? []) {
     const url = link.url?.trim()
     if (!url || !hasProfilePath(url)) continue
@@ -37,14 +36,9 @@ function hasProfilePath(url: string): boolean {
 <template>
   <header class="cv-header">
     <h1 class="cv-name">{{ settings.name }}</h1>
-    <p v-if="settings.email || phone" class="cv-contact">
-      <template v-if="settings.email">
-        E-mail: <a :href="`mailto:${settings.email}`">{{ settings.email }}</a>
-      </template>
-      <template v-if="phone">
-        <span v-if="settings.email" class="cv-sep" aria-hidden="true"> | </span>
-        Phone: <a :href="`tel:${phone.replace(/[^\d+]/g, '')}`">{{ phone }}</a>
-      </template>
+    <!-- The phone number is kept private: this CV is public. -->
+    <p v-if="settings.email" class="cv-contact">
+      E-mail: <a :href="`mailto:${settings.email}`">{{ settings.email }}</a>
     </p>
     <p v-if="links.length" class="cv-links">
       <template v-for="(link, index) in links" :key="link.href">

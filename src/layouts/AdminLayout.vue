@@ -33,8 +33,12 @@ const navItems = [
   { title: 'Site Settings', icon: 'mdi-cog-outline', to: { name: 'admin-settings' } },
 ]
 
+/** Sub-pages (e.g. /publications/new) take their section's title. */
 const currentTitle = computed(
-  () => navItems.find((item) => item.to.name === route.name)?.title ?? 'Admin',
+  () =>
+    navItems.find((item) => item.to.name === route.name)?.title ??
+    navItems.find((item) => !item.exact && route.path.startsWith(router.resolve(item.to).path))?.title ??
+    'Admin',
 )
 
 async function handleLogout() {
@@ -101,7 +105,8 @@ async function handleLogout() {
 
     <v-main class="bg-background">
       <div class="admin-content">
-        <router-view />
+        <!-- Keyed so moving between /publications/new and /publications/:id starts fresh. -->
+        <router-view :key="route.fullPath" />
       </div>
     </v-main>
 

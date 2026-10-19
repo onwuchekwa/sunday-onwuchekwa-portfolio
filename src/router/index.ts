@@ -88,6 +88,8 @@ const adminRoutes: RouteRecordRaw[] = [
       { path: 'home', name: 'admin-home', component: () => import('@/views/admin/HomeEditView.vue') },
       { path: 'about', redirect: { name: 'admin-home' } },
       { path: 'publications', name: 'admin-publications', component: () => import('@/views/admin/PublicationsManageView.vue') },
+      { path: 'publications/new', name: 'admin-publication-new', component: () => import('@/views/admin/PublicationEditView.vue') },
+      { path: 'publications/:id', name: 'admin-publication-edit', component: () => import('@/views/admin/PublicationEditView.vue') },
       { path: 'news', name: 'admin-news', component: () => import('@/views/admin/NewsManageView.vue') },
       { path: 'cv', name: 'admin-cv', component: () => import('@/views/admin/CvManageView.vue') },
     ],

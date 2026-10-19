@@ -194,6 +194,19 @@ async function handleSave() {
   }
 }
 
+function sectionFor(id: CvSectionId) {
+  return cv.value.sections.find((s) => s.id === id)
+}
+
+/** The first filled field (in the form's order) as the headline, the next two as detail. */
+function entrySummary(entry: Record<string, unknown>): { primary: string; detail: string } {
+  const values = (activeMeta.value?.fields ?? [])
+    .map((field) => String(entry[field.key] ?? '').split('\n')[0].trim())
+    .filter(Boolean)
+  if (!values.length) return { primary: entryDisplay(entry), detail: '' }
+  return { primary: values[0], detail: values.slice(1, 3).join(' · ') }
+}
+
 function entryDisplay(entry: Record<string, unknown>): string {
   return Object.entries(entry)
     .filter(([key]) => key !== 'visible' && key !== 'showOnAbout')
@@ -226,30 +239,33 @@ function entryDisplay(entry: Record<string, unknown>): string {
     <v-row>
       <v-col cols="12" md="3">
         <v-card class="pa-2">
-          <v-list density="compact" nav>
-            <v-list-item
+          <p class="cv-sections__help">Sections · the eye shows or hides one on your CV</p>
+          <ul class="cv-sections">
+            <li
               v-for="meta in CV_SECTION_META"
               :key="meta.id"
-              :title="meta.title"
-              :active="activeTab === meta.id"
-              rounded="lg"
-              @click="activeTab = meta.id"
-            />
-          </v-list>
-        </v-card>
-
-        <v-card class="pa-4 mt-4">
-          <h3 class="text-subtitle-2 font-weight-bold mb-3">Section visibility</h3>
-          <v-switch
-            v-for="section in cv.sections"
-            :key="section.id"
-            v-model="section.visible"
-            :label="section.title"
-            density="compact"
-            color="primary"
-            hide-details
-            class="mb-1"
-          />
+              class="cv-section-item"
+              :class="{
+                'cv-section-item--active': activeTab === meta.id,
+                'cv-section-item--hidden': sectionFor(meta.id) && !sectionFor(meta.id)!.visible,
+              }"
+            >
+              <button type="button" class="cv-section-item__name" @click="activeTab = meta.id">
+                {{ meta.title }}
+                <span class="cv-section-item__count">{{ sectionFor(meta.id)?.entries.length ?? 0 }}</span>
+              </button>
+              <v-btn
+                v-if="sectionFor(meta.id)"
+                :icon="sectionFor(meta.id)!.visible ? 'mdi-eye-outline' : 'mdi-eye-off-outline'"
+                variant="text"
+                size="small"
+                density="comfortable"
+                :aria-label="`${meta.title}: ${sectionFor(meta.id)!.visible ? 'shown on CV (click to hide)' : 'hidden from CV (click to show)'}`"
+                :title="sectionFor(meta.id)!.visible ? 'Shown on your CV. Click to hide.' : 'Hidden from your CV. Click to show.'"
+                @click="sectionFor(meta.id)!.visible = !sectionFor(meta.id)!.visible"
+              />
+            </li>
+          </ul>
         </v-card>
 
       </v-col>
@@ -309,7 +325,8 @@ function entryDisplay(entry: Record<string, unknown>): string {
                 aria-hidden="true"
               />
               <button type="button" class="cv-entry__text" @click="openEditEntry(index)">
-                {{ entryDisplay(entry) || 'Untitled entry' }}
+                <span class="cv-entry__primary">{{ entrySummary(entry).primary || 'Untitled entry' }}</span>
+                <span v-if="entrySummary(entry).detail" class="cv-entry__detail">{{ entrySummary(entry).detail }}</span>
               </button>
               <div class="cv-entry__actions">
                 <template v-if="canReorder">
@@ -461,20 +478,93 @@ function entryDisplay(entry: Record<string, unknown>): string {
 .cv-entry__text {
   flex: 1 1 auto;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
   padding: 0.5rem 0;
   text-align: left;
   font: inherit;
-  font-size: 0.9375rem;
-  line-height: 1.45;
   color: inherit;
   background: none;
   border: 0;
   cursor: pointer;
+}
+
+.cv-entry__primary {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
+}
+
+.cv-entry__detail {
+  font-size: 0.8125rem;
+  color: var(--text-body);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cv-sections__help {
+  margin: 0.375rem 0.5rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.cv-sections {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cv-section-item {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+}
+
+.cv-section-item--active {
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.cv-section-item__name {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.25rem 0.5rem 0.75rem;
+  text-align: left;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.cv-section-item--active .cv-section-item__name {
+  font-weight: 700;
+  color: var(--byu-navy);
+}
+
+.cv-section-item--hidden .cv-section-item__name {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.cv-section-item__count {
+  min-width: 1.5rem;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-muted);
+  background: rgba(var(--v-theme-primary), 0.06);
 }
 
 .cv-entry__text:hover {

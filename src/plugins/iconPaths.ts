@@ -70,6 +70,16 @@ import {
   mdiDragVertical,
   mdiContentPaste,
   mdiAutoFix,
+  mdiMagnify,
+  mdiStar,
+  mdiStarOutline,
+  mdiCheck,
+  mdiAlertCircleOutline,
+  mdiCheckboxBlankCircleOutline,
+  mdiGoogle,
+  mdiEyeOutline,
+  mdiEyeOffOutline,
+  mdiChevronRight,
 } from '@mdi/js'
 
 export const ICON_PATHS: Record<string, string> = {
@@ -139,4 +149,14 @@ export const ICON_PATHS: Record<string, string> = {
   'mdi-drag-vertical': mdiDragVertical,
   'mdi-content-paste': mdiContentPaste,
   'mdi-auto-fix': mdiAutoFix,
+  'mdi-magnify': mdiMagnify,
+  'mdi-star': mdiStar,
+  'mdi-star-outline': mdiStarOutline,
+  'mdi-check': mdiCheck,
+  'mdi-alert-circle-outline': mdiAlertCircleOutline,
+  'mdi-checkbox-blank-circle-outline': mdiCheckboxBlankCircleOutline,
+  'mdi-google': mdiGoogle,
+  'mdi-eye-outline': mdiEyeOutline,
+  'mdi-eye-off-outline': mdiEyeOffOutline,
+  'mdi-chevron-right': mdiChevronRight,
 }

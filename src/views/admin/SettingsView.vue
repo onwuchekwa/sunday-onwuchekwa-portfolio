@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import SocialIcon from '@/components/SocialIcon.vue'
+import { buildSiteTitle } from '@/utils/siteHead'
 import UnsavedChangesBar from '@/components/admin/UnsavedChangesBar.vue'
 import { useNotify } from '@/composables/useNotify'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
@@ -26,6 +28,24 @@ async function loadAll() {
 }
 
 onMounted(loadAll)
+
+/** Roughly what Google shows: it cuts titles near 60 characters and descriptions near 160. */
+const DESCRIPTION_LIMIT = 160
+const searchTitle = computed(() => truncate(buildSiteTitle(settings.value), 62))
+const searchDescription = computed(() => truncate(settings.value.tagline ?? '', DESCRIPTION_LIMIT))
+const descriptionLength = computed(() => (settings.value.tagline ?? '').trim().length)
+const descriptionAdvice = computed(() => {
+  const n = descriptionLength.value
+  if (!n) return 'Add a sentence or two about who you are and what you study.'
+  if (n < 80) return 'A bit short. Mention your role, institution, and research topic.'
+  if (n > DESCRIPTION_LIMIT) return `Google will cut this off after about ${DESCRIPTION_LIMIT} characters, as shown above.`
+  return 'Good length.'
+})
+
+function truncate(text: string, max: number): string {
+  const clean = text.trim().replace(/\s+/g, ' ')
+  return clean.length <= max ? clean : `${clean.slice(0, max).replace(/\s+\S*$/, '')}…`
+}
 
 function addSocialLink() {
   settings.value.socialLinks.push({ platform: '', url: '', icon: 'mdi-link' })
@@ -91,16 +111,33 @@ async function handleSave() {
             <v-text-field v-model="settings.name" label="Full name" required />
           </v-col>
           <v-col cols="12" md="6">
-            <v-text-field v-model="settings.title" label="Title / Affiliation" required />
+            <v-text-field
+              v-model="settings.title"
+              label="Role line"
+              hint="Above your home page headline and in search results. Separate parts with |, e.g. PhD Student | HCI Researcher | Brigham Young University"
+              persistent-hint
+              required
+            />
           </v-col>
           <v-col cols="12">
             <v-textarea
               v-model="settings.tagline"
               label="Site description"
-              rows="3"
-              hint="Used as the meta description for search engines and link previews. Your bio is edited under Home Page."
+              rows="2"
+              auto-grow
+              :counter="DESCRIPTION_LIMIT"
+              persistent-counter
+              :hint="descriptionAdvice"
               persistent-hint
             />
+            <div class="search-preview" aria-label="Search result preview">
+              <span class="search-preview__label">How you appear in Google</span>
+              <span class="search-preview__url">sundayonwuchekwa.com</span>
+              <span class="search-preview__title">{{ searchTitle }}</span>
+              <span class="search-preview__description">
+                {{ searchDescription || 'Your site description appears here.' }}
+              </span>
+            </div>
           </v-col>
           <v-col cols="12" md="6">
             <ImageUploadField
@@ -124,16 +161,8 @@ async function handleSave() {
           <v-col cols="12" md="6">
             <v-text-field
               v-model="settings.phone"
-              label="Phone"
-              hint="Shown on your CV header"
-              persistent-hint
-            />
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field
-              v-model="settings.websiteUrl"
-              label="Website URL"
-              hint="Shown on your CV header (e.g. https://sunday-onwuchekwa.web.app)"
+              label="Phone (private)"
+              hint="Kept for your records only; it isn’t shown on your site or CV."
               persistent-hint
             />
           </v-col>
@@ -179,20 +208,21 @@ async function handleSave() {
     <v-card class="pa-6 mb-4">
         <h2 class="admin-card-title">Profile links</h2>
         <p class="text-body-2 text-body-readable mb-3">
-          Shown in the sidebar and footer. Icons use Material Design Icons names (e.g. mdi-school, mdi-linkedin).
+          Shown in the sidebar and footer. Google Scholar, ORCID, LinkedIn, ResearchGate, and GitHub
+          get their logos automatically from the link.
         </p>
         <div v-for="(link, index) in settings.socialLinks" :key="index" class="mb-3">
-          <v-row>
+          <v-row align="center">
+            <v-col cols="auto" class="social-preview">
+              <SocialIcon :link="link" :size="22" />
+            </v-col>
             <v-col cols="12" md="3">
-              <v-text-field v-model="link.platform" label="Platform" />
+              <v-text-field v-model="link.platform" label="Name shown" placeholder="Google Scholar" hide-details />
             </v-col>
-            <v-col cols="12" md="6">
-              <v-text-field v-model="link.url" label="URL" />
+            <v-col>
+              <v-text-field v-model="link.url" label="Link" placeholder="https://" hide-details />
             </v-col>
-            <v-col cols="12" md="2">
-              <v-text-field v-model="link.icon" label="Icon (mdi-*)" />
-            </v-col>
-            <v-col cols="12" md="1" class="d-flex align-center">
+            <v-col cols="auto" class="d-flex align-center">
               <v-btn icon="mdi-delete" variant="text" color="error" aria-label="Remove link" @click="removeSocialLink(index)" />
             </v-col>
           </v-row>
@@ -206,3 +236,47 @@ async function handleSave() {
     <UnsavedChangesBar :show="isDirty" :saving="saving" @save="handleSave" @discard="loadAll" />
   </div>
 </template>
+
+<style scoped>
+.search-preview {
+  display: grid;
+  gap: 0.125rem;
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.12);
+  background: #ffffff;
+  font-family: Arial, sans-serif;
+}
+
+.search-preview__label {
+  margin-bottom: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.search-preview__url {
+  font-size: 0.8125rem;
+  color: #202124;
+}
+
+.search-preview__title {
+  font-size: 1.25rem;
+  line-height: 1.3;
+  color: #1a0dab;
+}
+
+.search-preview__description {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #4d5156;
+}
+
+.social-preview {
+  color: var(--text-muted);
+}
+</style>
