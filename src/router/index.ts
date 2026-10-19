@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { loadSiteSettingsOnce } from '@/composables/useSiteSettings'
 import type { PublicPageId } from '@/types/content'
 import { adminSiteOrigin, isAdminHost } from '@/utils/hosts'
+import { setPageHead, type PageHead } from '@/utils/siteHead'
 
 const publicRoutes: RouteRecordRaw[] = [
   {
@@ -17,25 +18,44 @@ const publicRoutes: RouteRecordRaw[] = [
         path: 'publications',
         name: 'publications',
         component: () => import('@/views/PublicationsView.vue'),
-        meta: { page: 'publications' },
+        meta: {
+          page: 'publications',
+          head: {
+            title: 'Publications',
+            description: (name: string) => `Papers, posters, and workshop papers by ${name}, grouped by year and type.`,
+          },
+        },
       },
       {
         path: 'news',
         name: 'news',
         component: () => import('@/views/NewsView.vue'),
-        meta: { page: 'news' },
+        meta: {
+          page: 'news',
+          head: {
+            title: 'News',
+            description: (name: string) => `Paper acceptances, talks, awards, and research milestones from ${name}.`,
+          },
+        },
       },
       {
         path: 'news/:id',
         name: 'news-detail',
         component: () => import('@/views/NewsDetailView.vue'),
-        meta: { page: 'news' },
+        meta: { page: 'news', head: { title: 'News' } },
       },
       {
         path: 'cv',
         name: 'cv',
         component: () => import('@/views/CvView.vue'),
-        meta: { page: 'cv', fullWidth: true },
+        meta: {
+          page: 'cv',
+          fullWidth: true,
+          head: {
+            title: 'Curriculum Vitae',
+            description: (name: string) => `Curriculum vitae of ${name}: education, publications, experience, and service.`,
+          },
+        },
       },
       {
         path: 'error',
@@ -46,6 +66,7 @@ const publicRoutes: RouteRecordRaw[] = [
         path: ':pathMatch(.*)*',
         name: 'not-found',
         component: () => import('@/views/NotFoundView.vue'),
+        meta: { head: { title: 'Page not found' } },
       },
     ],
   },
@@ -109,6 +130,12 @@ router.beforeEach(async (to) => {
       return { name: 'not-found' }
     }
   }
+})
+
+// Page titles and descriptions here mirror scripts/prerender-meta.mjs, which writes them into
+// the static HTML for link previews. News posts replace theirs once the post has loaded.
+router.afterEach((to) => {
+  setPageHead((to.meta.head as PageHead | undefined) ?? {})
 })
 
 export default router

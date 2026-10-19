@@ -1,6 +1,7 @@
 /**
  * Post-build: write a copy of dist/index.html per public page and per published news post,
- * with that page's title, description, image, and URL in the <head>.
+ * with that page's title, description, image, and URL in the <head>. Also adds Person
+ * structured data (JSON-LD) to every page and writes dist/sitemap.xml.
  *
  * Link-preview bots (LinkedIn, Slack, iMessage, X, …) don't run JavaScript, so without this
  * every shared URL previews as the home page. With `cleanUrls` in firebase.json, Hosting serves
@@ -22,7 +23,7 @@ loadDotEnv('.env')
 const projectId = process.env.VITE_FIREBASE_PROJECT_ID
 const apiKey = process.env.VITE_FIREBASE_API_KEY
 
-const template = readFileSync(join(DIST, 'index.html'), 'utf8')
+let template = readFileSync(join(DIST, 'index.html'), 'utf8')
 
 try {
   if (!projectId || !apiKey) throw new Error('VITE_FIREBASE_PROJECT_ID / VITE_FIREBASE_API_KEY not set')
@@ -31,6 +32,11 @@ try {
   const name = settings.name || 'Sunday O. Onwuchekwa'
   const pageVisibility = settings.pageVisibility ?? {}
   const news = (await listDocs('news')).filter((item) => item.published)
+  const cv = (await getDoc('cv/main')) ?? {}
+
+  // Every page carries the Person data, so the template gets it before the copies are made.
+  template = template.replace('</head>', `${personJsonLd(settings, name, cv)}\n  </head>`)
+  writeFileSync(join(DIST, 'index.html'), template)
 
   const pages = [
     {
@@ -59,8 +65,9 @@ try {
         path: `/news/${item.id}`,
         title: `${item.title} | ${name}`,
         description: summarize(item.body) || `News from ${name}.`,
-        image: newsImage(item),
+        image: publishImage(item.imageUrl, `news-${item.id}`),
         type: 'article',
+        lastmod: item.date,
       })
     }
   }
@@ -70,7 +77,8 @@ try {
     mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file, renderHead(template, page))
   }
-  console.log(`prerender-meta: wrote preview tags for ${pages.length} pages`)
+  writeFileSync(join(DIST, 'sitemap.xml'), sitemap([{ path: '/' }, ...pages]))
+  console.log(`prerender-meta: wrote preview tags for ${pages.length} pages and a sitemap`)
 } catch (error) {
   console.warn(`prerender-meta: skipped (${error instanceof Error ? error.message : error})`)
 }
@@ -101,20 +109,65 @@ function renderHead(html, { path, title, description, image = DEFAULT_IMAGE, typ
 }
 
 /**
- * News images are stored inline as data URLs, which previews can't use, so they are written
- * out as files under /og/. External image URLs are used as-is.
+ * Images are stored inline as data URLs, which previews and crawlers can't use, so they are
+ * written out as files under /og/. External image URLs are used as-is.
  */
-function newsImage(item) {
-  const src = item.imageUrl?.trim()
-  if (!src) return DEFAULT_IMAGE
+function publishImage(imageUrl, basename, fallback = DEFAULT_IMAGE) {
+  const src = imageUrl?.trim()
+  if (!src) return fallback
   if (/^https?:\/\//i.test(src)) return src
   const match = src.match(/^data:image\/(png|jpe?g|webp|gif);base64,(.+)$/i)
-  if (!match) return DEFAULT_IMAGE
+  if (!match) return fallback
   const ext = match[1].toLowerCase().replace('jpeg', 'jpg')
-  const file = join(DIST, 'og', `news-${item.id}.${ext}`)
+  const file = join(DIST, 'og', `${basename}.${ext}`)
   mkdirSync(dirname(file), { recursive: true })
   writeFileSync(file, Buffer.from(match[2], 'base64'))
-  return `${SITE}/og/news-${item.id}.${ext}`
+  return `${SITE}/og/${basename}.${ext}`
+}
+
+/** schema.org Person, so search engines can tie this site to the same person's other profiles. */
+function personJsonLd(settings, name, cv) {
+  const interests = (cv.sections ?? [])
+    .find((section) => section.id === 'researchInterests')
+    ?.entries?.filter((entry) => entry.visible !== false)
+    .map((entry) => String(entry.title ?? entry.text ?? '').trim())
+    .filter(Boolean)
+  // The site title reads like "PhD Student in Computer Science | HCI Researcher | …"; its first part is the role.
+  const jobTitle = settings.title?.split('|')[0].trim()
+  const person = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    '@id': `${SITE}/#person`,
+    name,
+    url: `${SITE}/`,
+    image: publishImage(settings.profileImageUrl, 'profile', null) ?? undefined,
+    jobTitle: jobTitle || undefined,
+    description: settings.tagline || undefined,
+    email: settings.email ? `mailto:${settings.email}` : undefined,
+    affiliation: settings.affiliation
+      ? { '@type': 'CollegeOrUniversity', name: settings.affiliation }
+      : undefined,
+    address: settings.location
+      ? { '@type': 'PostalAddress', addressLocality: settings.location }
+      : undefined,
+    knowsAbout: interests?.length ? interests : undefined,
+    sameAs: (settings.socialLinks ?? []).map((link) => link.url?.trim()).filter((url) => /^https?:\/\//i.test(url ?? '')),
+  }
+  // `<` is escaped so no string in the data can close the script element.
+  const json = JSON.stringify(person).replace(/</g, '\\u003c')
+  return `  <script type="application/ld+json">${json}</script>`
+}
+
+function sitemap(pages) {
+  const urls = pages.map(({ path, lastmod }) => {
+    const date = /^\d{4}-\d{2}-\d{2}/.exec(lastmod ?? '')?.[0]
+    return `  <url><loc>${escapeText(SITE + path)}</loc>${date ? `<lastmod>${date}</lastmod>` : ''}</url>`
+  })
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.join('\n')}
+</urlset>
+`
 }
 
 /** First sentence of the first paragraph, with the news Markdown subset stripped. */

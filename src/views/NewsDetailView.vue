@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useNews } from '@/composables/useNews'
 import { formatLongDate } from '@/utils/date'
 import NewsBody from '@/components/NewsBody.vue'
+import { newsSummary } from '@/utils/news'
+import { setPageHead } from '@/utils/siteHead'
 
 const route = useRoute()
 const { newsItems, load, loading, latestNews } = useNews()
@@ -15,6 +17,14 @@ const item = computed(() => ordered.value[index.value])
 /** Newer and older neighbours for in-article navigation. */
 const newer = computed(() => (index.value > 0 ? ordered.value[index.value - 1] : undefined))
 const older = computed(() => (index.value >= 0 ? ordered.value[index.value + 1] : undefined))
+
+watch(
+  item,
+  (post) => {
+    if (post) setPageHead({ title: post.title, description: newsSummary(post.body) })
+  },
+  { immediate: true },
+)
 
 onMounted(() => load(true))
 </script>
