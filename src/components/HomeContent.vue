@@ -51,13 +51,6 @@ const selectedPublications = computed(() => {
 
 const researchThemes = computed(() => props.researchThemes)
 
-/** Internal paths route in-app; full URLs open in a new tab. */
-function themeLinkAttrs(link: string) {
-  if (!link) return {}
-  if (link.startsWith('/')) return { to: link }
-  return { href: link, target: '_blank', rel: 'noopener noreferrer' }
-}
-
 const scholarUrl = computed(
   () =>
     settings.value.socialLinks.find((link) => /scholar/i.test(link.platform) && link.url)?.url ??
@@ -96,15 +89,7 @@ const pageVisible = computed(() => settings.value.pageVisibility)
       <ol class="home-themes">
         <li v-for="(theme, index) in researchThemes" :key="theme.title" class="home-theme">
           <span class="home-theme__number" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span>
-          <h3 class="home-theme__title">
-            <component
-              :is="theme.link ? (theme.link.startsWith('/') ? 'router-link' : 'a') : 'span'"
-              v-bind="themeLinkAttrs(theme.link)"
-              class="home-theme__link"
-            >
-              {{ theme.title }}
-            </component>
-          </h3>
+          <h3 class="home-theme__title">{{ theme.title }}</h3>
           <p v-if="theme.description" class="home-theme__text">{{ theme.description }}</p>
         </li>
       </ol>
@@ -250,17 +235,10 @@ const pageVisible = computed(() => settings.value.pageVisibility)
 }
 
 .home-theme {
-  position: relative;
   padding: 1.25rem 1.25rem 1.375rem;
   border: 1px solid var(--rule);
   border-radius: 10px;
   background: rgb(var(--v-theme-surface));
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.home-theme:has(.home-theme__link[href]):hover {
-  border-color: var(--rule-strong);
-  box-shadow: 0 4px 16px rgba(31, 35, 40, 0.06);
 }
 
 .home-theme__number {
@@ -281,28 +259,6 @@ const pageVisible = computed(() => settings.value.pageVisibility)
   line-height: 1.3;
   letter-spacing: -0.005em;
   color: var(--heading);
-}
-
-.home-theme__link {
-  color: inherit !important;
-  text-decoration: none;
-}
-
-/* A linked card is clickable anywhere. */
-.home-theme__link[href]::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-}
-
-.home-theme__link[href]:focus-visible {
-  outline: none;
-}
-
-.home-theme:has(.home-theme__link[href]:focus-visible) {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 .home-theme__text {

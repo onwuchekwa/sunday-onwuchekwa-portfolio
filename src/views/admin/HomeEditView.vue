@@ -177,7 +177,6 @@ const bioParagraphCount = computed(
             <ol v-if="researchThemes.length" class="block__list">
               <li v-for="theme in researchThemes" :key="theme.title">
                 <strong>{{ theme.title }}</strong>
-                <span v-if="!theme.link" class="block__note">not linked</span>
               </li>
             </ol>
             <p v-else class="block__empty">No research interests yet; this section is hidden.</p>

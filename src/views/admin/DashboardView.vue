@@ -111,17 +111,6 @@ const tasks = computed<Task[]>(() => {
       action: 'Post news',
     })
   }
-
-  const research = cv.value.sections.find((sec) => sec.id === 'researchInterests')
-  if (research && research.entries.some((e) => !String(e.link ?? '').trim())) {
-    list.push({
-      id: 'research-links',
-      text: 'Link your research cards to a paper or post',
-      detail: 'Linked cards on the home page become clickable.',
-      to: { name: 'admin-cv' },
-      action: 'Open CV Builder',
-    })
-  }
   return list
 })
 

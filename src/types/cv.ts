@@ -92,7 +92,6 @@ export const CV_SECTION_META: CvSectionMeta[] = [
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'description', label: 'Description (one sentence, shown on the home page)', type: 'textarea' },
-      { key: 'link', label: 'Link (optional: a related paper URL or a page like /news/…)', type: 'text' },
     ],
   },
   {

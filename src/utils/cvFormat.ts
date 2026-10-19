@@ -290,15 +290,12 @@ export function resolveResearchInterestTitle(entry: Record<string, unknown>): st
 export interface ResearchInterestDisplay {
   title: string
   description: string
-  /** Optional: a site path ("/news/…") or a full URL to a related paper or post. */
-  link: string
 }
 
 export function toResearchInterestDisplay(entry: Record<string, unknown>): ResearchInterestDisplay {
   return {
     title: resolveResearchInterestTitle(entry),
     description: String(entry.description ?? '').trim(),
-    link: String(entry.link ?? '').trim(),
   }
 }
 

@@ -78,7 +78,7 @@ const sectionGuidance = computed(() => {
     case 'researchInterests':
       return {
         type: 'info' as const,
-        text: 'Each entry is a card in the Research section of your home page and an item in the Research Interests line on your CV. Drag to set their order. Add a link to make a card clickable.',
+        text: 'Each entry is a card in the Research section of your home page and an item in the Research Interests line on your CV. Drag to set their order.',
       }
     case 'education':
       return {
