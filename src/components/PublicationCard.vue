@@ -110,7 +110,7 @@ const canShowAbstract = computed(() => props.showAbstract !== false && !!props.p
       class="pub-thumb-wrap d-none d-sm-block flex-shrink-0"
       :aria-label="`${publication.title} (thumbnail)`"
     >
-      <v-img :src="publication.thumbnailUrl" alt="" cover class="pub-thumb" />
+      <img :src="publication.thumbnailUrl" alt="" loading="lazy" class="pub-thumb" />
     </a>
   </article>
 </template>
@@ -207,15 +207,21 @@ const canShowAbstract = computed(() => props.showAbstract !== false && !!props.p
 }
 
 .pub-thumb-wrap {
-  width: 128px;
-  height: 88px;
-  border-radius: 6px;
-  overflow: hidden;
+  align-self: flex-start;
+  width: 168px;
+  padding: 4px;
+  border-radius: 8px;
   border: 1px solid var(--rule);
+  background: rgb(var(--v-theme-surface));
 }
 
+/* The whole image, scaled to fit: figures and posters come in every shape. */
 .pub-thumb {
+  display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
+  max-height: 168px;
+  object-fit: contain;
+  border-radius: 4px;
 }
 </style>

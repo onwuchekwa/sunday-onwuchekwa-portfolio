@@ -5,6 +5,7 @@ import { useDisplay } from 'vuetify'
 import { useAuthStore } from '@/stores/auth'
 import { publicSiteOrigin } from '@/utils/hosts'
 import ConfirmDialog from '@/components/admin/ConfirmDialog.vue'
+import AdminNotifier from '@/components/admin/AdminNotifier.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -105,6 +106,7 @@ async function handleLogout() {
     </v-main>
 
     <ConfirmDialog />
+    <AdminNotifier />
   </v-app>
 </template>
 

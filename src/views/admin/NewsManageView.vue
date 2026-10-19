@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useNews } from '@/composables/useNews'
 import { useConfirm } from '@/composables/useConfirm'
+import { useNotify } from '@/composables/useNotify'
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import NewsBody from '@/components/NewsBody.vue'
@@ -16,6 +18,7 @@ import { todayLocalIsoDate } from '@/utils/date'
 
 const { newsItems, load, create, update, remove, loading } = useNews()
 const { confirm } = useConfirm()
+const notify = useNotify()
 const route = useRoute()
 const router = useRouter()
 const dialog = ref(false)
@@ -33,6 +36,24 @@ const emptyForm = (): Omit<NewsItem, 'id'> => ({
 })
 
 const form = ref<Omit<NewsItem, 'id'> & { imageUrl: string }>(emptyForm())
+
+/** Unsaved edits in the open dialog; closing it or leaving the page asks first. */
+const {
+  isDirty: formDirty,
+  markSaved: markFormClean,
+  confirmDiscard,
+} = useUnsavedChanges(() => (dialog.value ? form.value : null))
+
+function showDialog() {
+  dialog.value = true
+  markFormClean()
+}
+
+async function closeDialog() {
+  if (!(await confirmDiscard())) return
+  dialog.value = false
+  markFormClean()
+}
 
 const headers = [
   { title: 'Title', key: 'title' },
@@ -107,7 +128,7 @@ function openCreate() {
   form.value = emptyForm()
   error.value = null
   bodyTab.value = 'write'
-  dialog.value = true
+  showDialog()
 }
 
 function openEdit(item: NewsItem) {
@@ -122,7 +143,7 @@ function openEdit(item: NewsItem) {
   }
   error.value = null
   bodyTab.value = 'write'
-  dialog.value = true
+  showDialog()
 }
 
 async function handleSave() {
@@ -135,14 +156,18 @@ async function handleSave() {
         `Post too large (${Math.round(docSize / 1024)} KB). Shorten the body text or use a smaller image.`,
       )
     }
+    const wasPublished = form.value.published
     if (editingId.value) {
       await update(editingId.value, form.value)
     } else {
       await create(form.value)
     }
     dialog.value = false
+    markFormClean()
+    notify.success(wasPublished ? 'Post saved. It’s live now.' : 'Draft saved. Turn on Published when it’s ready.')
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Save failed'
+    notify.error('Couldn’t save the post. Your edits are still here.', e)
   } finally {
     saving.value = false
   }
@@ -153,11 +178,22 @@ async function handleDelete(item: NewsItem) {
     title: 'Delete this news post?',
     message: `“${item.title}” will be removed from your site. This can’t be undone.`,
   })
-  if (ok && item.id) await remove(item.id)
+  if (!ok || !item.id) return
+  try {
+    await remove(item.id)
+    notify.success('Post deleted.')
+  } catch (e) {
+    notify.error('Couldn’t delete the post.', e)
+  }
 }
 
 async function togglePublished(id: string, current: boolean) {
-  await update(id, { published: !current })
+  try {
+    await update(id, { published: !current })
+    notify.success(current ? 'Post unpublished. It’s hidden from your site.' : 'Post published. It’s live now.')
+  } catch (e) {
+    notify.error('Couldn’t change whether the post is published.', e)
+  }
 }
 </script>
 
@@ -255,8 +291,9 @@ async function togglePublished(id: string, current: boolean) {
         </v-card-text>
         <v-divider />
         <v-card-actions class="admin-dialog__actions">
+          <span v-if="formDirty" class="dialog-unsaved">Unsaved changes</span>
           <v-spacer />
-          <v-btn variant="text" @click="dialog = false">Cancel</v-btn>
+          <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
           <v-btn type="submit" form="news-form" color="primary" variant="flat" :loading="saving">
             Save post
           </v-btn>
@@ -267,6 +304,12 @@ async function togglePublished(id: string, current: boolean) {
 </template>
 
 <style scoped>
+.dialog-unsaved {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #a35f00;
+}
+
 .news-editor__bar {
   display: flex;
   flex-wrap: wrap;

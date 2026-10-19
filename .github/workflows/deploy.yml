@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Nightly rebuild so content edited in admin (new news posts, a changed description, …)
+  # gets fresh link previews, sitemap entries, and page snapshots without a code push.
+  # 09:00 UTC is 2–3 am in Utah.
+  schedule:
+    - cron: '0 9 * * *'
 
 permissions:
   contents: read

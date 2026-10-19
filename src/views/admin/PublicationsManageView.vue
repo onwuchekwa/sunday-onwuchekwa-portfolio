@@ -3,6 +3,11 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePublications } from '@/composables/usePublications'
 import { useConfirm } from '@/composables/useConfirm'
+import { useNotify } from '@/composables/useNotify'
+import { useSiteSettings } from '@/composables/useSiteSettings'
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
+import { isSameAuthor, parseAuthorList } from '@/utils/authors'
+import { extractDoi, fetchDoiDetails } from '@/utils/crossref'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AuthorList from '@/components/AuthorList.vue'
@@ -21,7 +26,9 @@ import {
 } from '@/types/content'
 
 const { publications, load, create, update, remove, loading } = usePublications()
+const { settings, load: loadSettings } = useSiteSettings()
 const { confirm } = useConfirm()
+const notify = useNotify()
 const route = useRoute()
 const router = useRouter()
 const dialog = ref(false)
@@ -58,6 +65,96 @@ const emptyForm = (): Omit<Publication, 'id'> => ({
 const form = ref(emptyForm())
 const authorError = ref('')
 
+/** Unsaved edits in the open dialog; closing it or leaving the page asks first. */
+const {
+  isDirty: formDirty,
+  markSaved: markFormClean,
+  confirmDiscard,
+} = useUnsavedChanges(() => (dialog.value ? form.value : null))
+
+function showDialog() {
+  dialog.value = true
+  markFormClean()
+}
+
+async function closeDialog() {
+  if (!(await confirmDiscard())) return
+  dialog.value = false
+  markFormClean()
+}
+
+// ---- Fill from DOI ----
+const doiInput = ref('')
+const doiLoading = ref(false)
+const doiResult = ref<{ kind: 'success' | 'error'; text: string } | null>(null)
+
+/** Authors as rows, with the site owner bolded. */
+function toAuthorRows(names: string[]) {
+  return names.map((name) => ({ name, bold: isSameAuthor(name, settings.value.name) }))
+}
+
+async function fillFromDoi() {
+  doiResult.value = null
+  const doi = extractDoi(doiInput.value)
+  if (!doi) {
+    doiResult.value = {
+      kind: 'error',
+      text: 'That doesn’t look like a DOI. Paste something like 10.1145/3584931.3607498 or a doi.org link.',
+    }
+    return
+  }
+  doiLoading.value = true
+  try {
+    const details = await fetchDoiDetails(doi)
+    const filled: string[] = []
+    if (details.title) {
+      form.value.title = details.title
+      filled.push('title')
+    }
+    if (details.authors.length) {
+      form.value.authors = toAuthorRows(details.authors)
+      filled.push(`${details.authors.length} authors`)
+    }
+    if (details.venue) {
+      form.value.venue = details.venue
+      filled.push('venue')
+    }
+    if (details.year) {
+      form.value.year = details.year
+      filled.push('year')
+    }
+    if (details.abstract && !form.value.abstract?.trim()) {
+      form.value.abstract = details.abstract
+      filled.push('abstract')
+    }
+    if (details.type) form.value.type = details.type
+    form.value.links.doi = `https://doi.org/${doi}`
+    if (!form.value.sourceUrl?.trim()) form.value.sourceUrl = `https://doi.org/${doi}`
+    filled.push('DOI link')
+    doiResult.value = {
+      kind: 'success',
+      text: `Filled in ${filled.join(', ')}. Check the type, status, and venue badge, which Crossref doesn’t provide.`,
+    }
+  } catch (e) {
+    doiResult.value = { kind: 'error', text: e instanceof Error ? e.message : 'Lookup failed.' }
+  } finally {
+    doiLoading.value = false
+  }
+}
+
+// ---- Paste authors ----
+const pasteOpen = ref(false)
+const pasteText = ref('')
+const pastedNames = computed(() => parseAuthorList(pasteText.value))
+
+function usePastedAuthors() {
+  if (!pastedNames.value.length) return
+  form.value.authors = toAuthorRows(pastedNames.value)
+  authorError.value = ''
+  pasteOpen.value = false
+  pasteText.value = ''
+}
+
 const typeItems = PUBLICATION_TYPES.map((t) => ({ title: t.title, value: t.value, subtitle: t.hint }))
 
 const venueBadgePreview = computed(() => resolveVenueShort(form.value))
@@ -72,7 +169,7 @@ const headers = [
 ]
 
 onMounted(async () => {
-  await load()
+  await Promise.all([load(), loadSettings()])
   // Dashboard "Add a publication" shortcut
   if (route.query.new) {
     router.replace({ query: {} })
@@ -85,11 +182,19 @@ function statusLabel(pub: Publication): string {
   return PUBLICATION_STATUSES.find((s) => s.value === value)?.title ?? value
 }
 
+function resetHelpers(doi = '') {
+  doiInput.value = doi
+  doiResult.value = null
+  pasteOpen.value = false
+  pasteText.value = ''
+}
+
 function openCreate() {
   editingId.value = null
   form.value = emptyForm()
   authorError.value = ''
-  dialog.value = true
+  resetHelpers()
+  showDialog()
 }
 
 function openEdit(pub: Publication) {
@@ -120,7 +225,8 @@ function openEdit(pub: Publication) {
     form.value.authors.push({ name: '', bold: false })
   }
   authorError.value = ''
-  dialog.value = true
+  resetHelpers(pub.links?.doi ?? '')
+  showDialog()
 }
 
 function addAuthor() {
@@ -154,10 +260,15 @@ async function handleSave() {
     const payload = { ...form.value, authors, links, typeScheme: PUBLICATION_TYPE_SCHEME }
     if (editingId.value) {
       await update(editingId.value, payload)
+      notify.success('Publication updated. It’s live now.')
     } else {
       await create(payload)
+      notify.success('Publication added. It’s live now.')
     }
     dialog.value = false
+    markFormClean()
+  } catch (e) {
+    notify.error('Couldn’t save the publication. Your edits are still here.', e)
   } finally {
     saving.value = false
   }
@@ -168,11 +279,22 @@ async function handleDelete(pub: Publication) {
     title: 'Delete this publication?',
     message: `“${pub.title}” will be removed from your site and CV. This can’t be undone.`,
   })
-  if (ok && pub.id) await remove(pub.id)
+  if (!ok || !pub.id) return
+  try {
+    await remove(pub.id)
+    notify.success('Publication deleted.')
+  } catch (e) {
+    notify.error('Couldn’t delete the publication.', e)
+  }
 }
 
 async function toggleCv(id: string, current: boolean) {
-  await update(id, { includeInCv: !current })
+  try {
+    await update(id, { includeInCv: !current })
+    notify.success(current ? 'Removed from your CV.' : 'Added to your CV.')
+  } catch (e) {
+    notify.error('Couldn’t update the CV setting.', e)
+  }
 }
 </script>
 
@@ -222,6 +344,44 @@ async function toggleCv(id: string, current: boolean) {
         <v-divider />
         <v-card-text class="admin-dialog__body">
         <v-form id="publication-form" @submit.prevent="handleSave">
+          <div class="doi-fill mb-4">
+            <div class="d-flex flex-wrap ga-2 align-start">
+              <v-text-field
+                v-model="doiInput"
+                label="DOI or DOI link"
+                placeholder="10.1145/… or https://doi.org/…"
+                prepend-inner-icon="mdi-link-variant"
+                density="comfortable"
+                hide-details
+                class="flex-grow-1"
+                @keydown.enter.prevent="fillFromDoi"
+              />
+              <v-btn
+                color="primary"
+                variant="tonal"
+                height="48"
+                prepend-icon="mdi-auto-fix"
+                :loading="doiLoading"
+                :disabled="!doiInput.trim()"
+                @click="fillFromDoi"
+              >
+                Fill details
+              </v-btn>
+            </div>
+            <p v-if="!doiResult" class="doi-fill__hint">
+              Paste the DOI and the title, authors, venue, year, and abstract fill in for you.
+            </p>
+            <v-alert
+              v-else
+              :type="doiResult.kind"
+              variant="tonal"
+              density="compact"
+              class="mt-2"
+            >
+              {{ doiResult.text }}
+            </v-alert>
+          </div>
+
           <h3 class="admin-form-section">Basics</h3>
           <v-text-field v-model="form.title" label="Title" required class="mb-2" />
           <div class="mb-4">
@@ -272,9 +432,44 @@ async function toggleCv(id: string, current: boolean) {
                 @click="removeAuthor(index)"
               />
             </div>
-            <v-btn variant="tonal" size="small" prepend-icon="mdi-plus" @click="addAuthor">
-              Add author
-            </v-btn>
+            <div class="d-flex flex-wrap ga-2">
+              <v-btn variant="tonal" size="small" prepend-icon="mdi-plus" @click="addAuthor">
+                Add author
+              </v-btn>
+              <v-btn
+                variant="text"
+                size="small"
+                prepend-icon="mdi-content-paste"
+                @click="pasteOpen = !pasteOpen"
+              >
+                Paste a list
+              </v-btn>
+            </div>
+            <div v-if="pasteOpen" class="author-paste mt-3">
+              <v-textarea
+                v-model="pasteText"
+                label="Paste the author list"
+                placeholder="Sunday O. Onwuchekwa, Spencer Taylor, and Amanda Lee Hughes"
+                rows="2"
+                auto-grow
+                autofocus
+                hide-details
+              />
+              <div class="d-flex flex-wrap align-center justify-space-between ga-2 mt-2">
+                <span class="text-body-2 text-medium-emphasis">
+                  {{ pastedNames.length ? `${pastedNames.length} authors found. Your name is bolded automatically.` : 'Commas, “and”, semicolons, or one per line all work.' }}
+                </span>
+                <v-btn
+                  color="primary"
+                  size="small"
+                  variant="flat"
+                  :disabled="!pastedNames.length"
+                  @click="usePastedAuthors"
+                >
+                  Replace authors
+                </v-btn>
+              </div>
+            </div>
             <p class="text-body-2 text-medium-emphasis mt-3 mb-0">
               Preview: <AuthorList :authors="form.authors" />
             </p>
@@ -393,8 +588,9 @@ async function toggleCv(id: string, current: boolean) {
         </v-card-text>
         <v-divider />
         <v-card-actions class="admin-dialog__actions">
+          <span v-if="formDirty" class="dialog-unsaved">Unsaved changes</span>
           <v-spacer />
-          <v-btn variant="text" @click="dialog = false">Cancel</v-btn>
+          <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
           <v-btn type="submit" form="publication-form" color="primary" variant="flat" :loading="saving">
             Save publication
           </v-btn>
@@ -403,3 +599,30 @@ async function toggleCv(id: string, current: boolean) {
     </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.doi-fill {
+  padding: 1rem;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-primary), 0.04);
+  border: 1px dashed rgba(var(--v-theme-primary), 0.2);
+}
+
+.doi-fill__hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-body);
+}
+
+.author-paste {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-primary), 0.03);
+}
+
+.dialog-unsaved {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #a35f00;
+}
+</style>

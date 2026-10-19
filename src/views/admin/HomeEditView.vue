@@ -3,14 +3,29 @@ import { onMounted, ref } from 'vue'
 import { useAbout } from '@/composables/useAbout'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import UnsavedChangesBar from '@/components/admin/UnsavedChangesBar.vue'
+import { useNotify } from '@/composables/useNotify'
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 
 const { about, load: loadAbout, save: saveAbout, loading: aboutLoading } = useAbout()
 const { settings, load: loadSettings, save: saveSettings, loading: settingsLoading } = useSiteSettings()
+const notify = useNotify()
 const saving = ref(false)
-const snackbar = ref(false)
 const error = ref<string | null>(null)
 
-onMounted(() => Promise.all([loadAbout(), loadSettings()]))
+const { isDirty, markSaved } = useUnsavedChanges(() => ({
+  bio: about.value.bio,
+  headline: settings.value.headline,
+  announcement: settings.value.announcement,
+  beyondResearch: settings.value.beyondResearch,
+}))
+
+async function loadAll() {
+  await Promise.all([loadAbout(), loadSettings()])
+  markSaved()
+}
+
+onMounted(loadAll)
 
 async function handleSave() {
   saving.value = true
@@ -18,9 +33,11 @@ async function handleSave() {
   try {
     // The bio lives in the about doc; the other home-page text lives in site settings.
     await Promise.all([saveAbout({ ...about.value }), saveSettings({ ...settings.value })])
-    snackbar.value = true
+    markSaved()
+    notify.success('Home page saved. It’s live now.')
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Save failed'
+    notify.error('Couldn’t save the home page.', e)
   } finally {
     saving.value = false
   }
@@ -31,13 +48,16 @@ async function handleSave() {
   <div>
     <AdminPageHeader title="Home Page">
       <template #description>
-        Everything on the public home page, top to bottom. The Research table comes from the
-        <router-link :to="{ name: 'admin-cv' }">CV Builder</router-link> (Research Interests), and
-        Selected Publications from
-        <router-link :to="{ name: 'admin-publications' }">Publications</router-link> marked Featured.
+        The text on your public home page, top to bottom. The line above the headline and the
+        site description are in <router-link :to="{ name: 'admin-settings' }">Site Settings</router-link>;
+        the Research cards come from the
+        <router-link :to="{ name: 'admin-cv' }">CV Builder</router-link> (Research Interests); and
+        Selected Publications shows papers marked Featured in
+        <router-link :to="{ name: 'admin-publications' }">Publications</router-link>, then your
+        latest accepted work.
       </template>
       <template #actions>
-        <v-btn type="submit" form="home-form" color="primary" prepend-icon="mdi-content-save" :loading="saving">
+        <v-btn type="submit" form="home-form" color="primary" prepend-icon="mdi-content-save" :loading="saving" :disabled="!isDirty">
           Save home page
         </v-btn>
       </template>
@@ -96,8 +116,6 @@ async function handleSave() {
       </v-form>
     </v-card>
 
-    <v-snackbar v-model="snackbar" color="success" timeout="3000">
-      Home page saved.
-    </v-snackbar>
+    <UnsavedChangesBar :show="isDirty" :saving="saving" @save="handleSave" @discard="loadAll" />
   </div>
 </template>

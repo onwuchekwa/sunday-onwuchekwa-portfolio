@@ -3,6 +3,9 @@ import { onMounted, ref } from 'vue'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import UnsavedChangesBar from '@/components/admin/UnsavedChangesBar.vue'
+import { useNotify } from '@/composables/useNotify'
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import {
   estimateDocumentSize,
   FIRESTORE_DOC_LIMIT_BYTES,
@@ -11,11 +14,18 @@ import {
 import { defaultSiteSettings, PUBLIC_PAGES } from '@/types/content'
 
 const { settings, load, save, loading } = useSiteSettings()
+const notify = useNotify()
 const saving = ref(false)
-const snackbar = ref(false)
 const error = ref<string | null>(null)
 
-onMounted(load)
+const { isDirty, markSaved } = useUnsavedChanges(() => settings.value)
+
+async function loadAll() {
+  await load()
+  markSaved()
+}
+
+onMounted(loadAll)
 
 function addSocialLink() {
   settings.value.socialLinks.push({ platform: '', url: '', icon: 'mdi-link' })
@@ -43,9 +53,11 @@ async function handleSave() {
       phone: settings.value.phone ?? '',
       pageVisibility: { ...defaultSiteSettings().pageVisibility, ...settings.value.pageVisibility },
     })
-    snackbar.value = true
+    markSaved()
+    notify.success('Settings saved. They’re live now.')
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Save failed'
+    notify.error('Couldn’t save your settings.', e)
   } finally {
     saving.value = false
   }
@@ -191,8 +203,6 @@ async function handleSave() {
     </v-card>
     </v-form>
 
-    <v-snackbar v-model="snackbar" color="success" timeout="3000">
-      Settings saved successfully.
-    </v-snackbar>
+    <UnsavedChangesBar :show="isDirty" :saving="saving" @save="handleSave" @discard="loadAll" />
   </div>
 </template>

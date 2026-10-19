@@ -66,6 +66,10 @@ import {
   mdiTwitter,
   mdiViewDashboardOutline,
   mdiWeb,
+  mdiCircle,
+  mdiDragVertical,
+  mdiContentPaste,
+  mdiAutoFix,
 } from '@mdi/js'
 
 export const ICON_PATHS: Record<string, string> = {
@@ -131,4 +135,8 @@ export const ICON_PATHS: Record<string, string> = {
   'mdi-twitter': mdiTwitter,
   'mdi-view-dashboard-outline': mdiViewDashboardOutline,
   'mdi-web': mdiWeb,
+  'mdi-circle': mdiCircle,
+  'mdi-drag-vertical': mdiDragVertical,
+  'mdi-content-paste': mdiContentPaste,
+  'mdi-auto-fix': mdiAutoFix,
 }
