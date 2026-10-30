@@ -32,3 +32,6 @@ dist-ssr
 service-account.json
 .firebase
 firebase-debug.log
+
+# Claude folder
+.claude/*
