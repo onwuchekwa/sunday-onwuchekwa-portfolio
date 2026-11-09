@@ -8,7 +8,7 @@ import { toResearchInterestDisplay } from '@/utils/cvFormat'
 import HomeContent from '@/components/HomeContent.vue'
 
 const { settings, load: loadSettings } = useSiteSettings()
-const { publications, load: loadPubs } = usePublications()
+const { publicPublications: publications, load: loadPubs } = usePublications()
 const { cv, load: loadCv, visibleEntries } = useCv()
 const { about, load: loadAbout } = useAbout()
 

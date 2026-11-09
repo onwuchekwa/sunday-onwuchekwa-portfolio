@@ -9,7 +9,7 @@ import { groupPublications, type PublicationGrouping } from '@/utils/publication
 import PublicationCard from '@/components/PublicationCard.vue'
 import UnderConstruction from '@/components/UnderConstruction.vue'
 
-const { publications, load, loading, error } = usePublications()
+const { publicPublications: publications, load, loading, error } = usePublications()
 const { settings, load: loadSettings } = useSiteSettings()
 const { cv, load: loadCv, visibleEntries } = useCv()
 

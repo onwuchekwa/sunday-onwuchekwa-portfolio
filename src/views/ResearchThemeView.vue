@@ -8,7 +8,7 @@ import { setPageHead } from '@/utils/siteHead'
 import PublicationCard from '@/components/PublicationCard.vue'
 
 const route = useRoute()
-const { publications, load: loadPubs } = usePublications()
+const { publicPublications: publications, load: loadPubs } = usePublications()
 const { cv, load: loadCv, visibleEntries } = useCv()
 const loaded = ref(false)
 

@@ -69,7 +69,10 @@ try {
 
   // One page per research theme that has tagged papers (see src/views/ResearchThemeView.vue).
   if (pageVisibility.publications !== false) {
-    const publications = await listDocs('publications')
+    // Rejected papers are hidden on the site (isPublicPublication in src/types/content.ts).
+    const publications = (await listDocs('publications')).filter(
+      (pub) => !(pub.status ? pub.status === 'rejected' : /rejected|declined/i.test(pub.cvStatus ?? '')),
+    )
     const research = (cv.sections ?? []).find((section) => section.id === 'researchInterests')
     for (const entry of research?.entries ?? []) {
       const title = String(entry.title ?? entry.text ?? '').trim()

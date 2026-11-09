@@ -32,11 +32,14 @@ onMounted(async () => {
   await load()
 })
 
-/** Newest first; under review on top, since that's what changes most. */
+/** Newest first; under review on top, since that's what changes most; rejected at the bottom. */
 const sorted = computed(() =>
   [...publications.value].sort((a, b) => {
-    const review = Number(resolvePublicationStatus(b) === 'under_review') - Number(resolvePublicationStatus(a) === 'under_review')
-    return review || b.year - a.year || (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+    const rank = (p: Publication) => {
+      const status = resolvePublicationStatus(p)
+      return status === 'under_review' ? 0 : status === 'rejected' ? 2 : 1
+    }
+    return rank(a) - rank(b) || b.year - a.year || (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
   }),
 )
 
@@ -229,6 +232,7 @@ async function saveCvOrder() {
                 </span>
                 <span class="chip chip--plain">{{ publicationTypeLabel(pub.type) }}</span>
                 <span v-if="resolvePublicationStatus(pub) === 'accepted'" class="chip chip--plain">{{ statusLabel(pub) }}</span>
+                <span v-if="resolvePublicationStatus(pub) === 'rejected'" class="chip chip--rejected">Rejected · hidden</span>
                 <span v-if="pub.featured" class="chip chip--featured">
                   <v-icon icon="mdi-star" size="12" /> Featured
                 </span>
@@ -365,6 +369,11 @@ async function saveCvOrder() {
 .chip--review {
   background: #fff4e0;
   color: #8a5300;
+}
+
+.chip--rejected {
+  background: #fde8e8;
+  color: #9b1c1c;
 }
 
 .chip--plain {

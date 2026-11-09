@@ -7,7 +7,7 @@ import { useSiteSettings } from '@/composables/useSiteSettings'
 import { useNotify } from '@/composables/useNotify'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import { toResearchInterestDisplay } from '@/utils/cvFormat'
-import { resolvePublicationStatus } from '@/types/content'
+import { isPublicPublication, resolvePublicationStatus } from '@/types/content'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import UnsavedChangesBar from '@/components/admin/UnsavedChangesBar.vue'
 import HomeContent from '@/components/HomeContent.vue'
@@ -65,7 +65,7 @@ const researchThemes = computed(() => {
 
 /** Same rule as the home page: featured first, then recent accepted or published work. */
 const selectedPublications = computed(() => {
-  const byRecency = [...publications.value].sort(
+  const byRecency = publications.value.filter(isPublicPublication).sort(
     (a, b) => b.year - a.year || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''),
   )
   const featured = byRecency.filter((p) => p.featured)

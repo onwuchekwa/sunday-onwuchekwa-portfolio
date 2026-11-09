@@ -93,12 +93,13 @@ export function publicationTypeLabel(type: PublicationType): string {
   return PUBLICATION_TYPES.find((t) => t.value === type)?.title ?? 'Other'
 }
 
-export type PublicationStatus = 'published' | 'accepted' | 'under_review'
+export type PublicationStatus = 'published' | 'accepted' | 'under_review' | 'rejected'
 
 export const PUBLICATION_STATUSES: { value: PublicationStatus; title: string }[] = [
   { value: 'published', title: 'Published' },
   { value: 'accepted', title: 'Accepted / Forthcoming' },
   { value: 'under_review', title: 'Under Review' },
+  { value: 'rejected', title: 'Rejected (hidden from site and CV)' },
 ]
 
 /** Buckets for the "By Type" view on the Publications page. */
@@ -159,9 +160,15 @@ export function resolvePublicationStatus(
 ): PublicationStatus {
   if (pub.status) return pub.status
   const text = (pub.cvStatus ?? '').toLowerCase()
+  if (/rejected|declined/.test(text)) return 'rejected'
   if (/submitted|under review|in review|revis/.test(text)) return 'under_review'
   if (/accepted|forthcoming|to appear|in press/.test(text)) return 'accepted'
   return 'published'
+}
+
+/** Rejected work stays in the admin but never appears on the public site or CV. */
+export function isPublicPublication(pub: Pick<Publication, 'status' | 'cvStatus'>): boolean {
+  return resolvePublicationStatus(pub) !== 'rejected'
 }
 
 /** Short venue badge, e.g. "CHI '26". Falls back to a trailing "(CSCW Companion '26)" in the venue. */

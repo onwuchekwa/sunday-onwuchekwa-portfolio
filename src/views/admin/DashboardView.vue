@@ -5,7 +5,7 @@ import { usePublications } from '@/composables/usePublications'
 import { useNews } from '@/composables/useNews'
 import { useCv } from '@/composables/useCv'
 import { useSiteSettings } from '@/composables/useSiteSettings'
-import { resolvePublicationStatus } from '@/types/content'
+import { isPublicPublication, resolvePublicationStatus } from '@/types/content'
 import { formatLongDate, parseLocalDate } from '@/utils/date'
 import { publicSiteOrigin } from '@/utils/hosts'
 
@@ -68,7 +68,8 @@ const tasks = computed<Task[]>(() => {
     })
   }
 
-  for (const pub of publications.value) {
+  // Rejected papers aren't shown anywhere, so they need no polishing.
+  for (const pub of publications.value.filter(isPublicPublication)) {
     const short = pub.title.length > 60 ? `${pub.title.slice(0, 57)}…` : pub.title
     if (!pub.thumbnailUrl) {
       list.push({
@@ -91,7 +92,7 @@ const tasks = computed<Task[]>(() => {
   }
 
   const research = cv.value.sections.find((sec) => sec.id === 'researchInterests')
-  const untagged = publications.value.filter((p) => !p.themes?.length)
+  const untagged = publications.value.filter((p) => isPublicPublication(p) && !p.themes?.length)
   if (research?.entries.length && untagged.length) {
     list.push({
       id: 'themes',

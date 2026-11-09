@@ -1,17 +1,19 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import {
   getPublications,
   addPublication,
   updatePublication,
   deletePublication,
 } from '@/firebase/firestore'
-import type { Publication } from '@/types/content'
+import { isPublicPublication, type Publication } from '@/types/content'
 import { groupPublicationsByCategory, type PublicationCategoryGroup } from '@/utils/cvFormat'
 
 export function usePublications() {
   const publications = ref<Publication[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  /** What visitors see: everything except rejected papers. */
+  const publicPublications = computed(() => publications.value.filter(isPublicPublication))
 
   async function load() {
     loading.value = true
@@ -45,7 +47,7 @@ export function usePublications() {
   }
 
   function cvPublications(): Publication[] {
-    return publications.value
+    return publicPublications.value
       .filter((p) => p.includeInCv)
       .sort((a, b) => (a.cvOrder ?? 0) - (b.cvOrder ?? 0) || b.year - a.year)
   }
@@ -55,7 +57,7 @@ export function usePublications() {
   }
 
   function latestPublications(count = 2): Publication[] {
-    return [...publications.value]
+    return [...publicPublications.value]
       .sort((a, b) => {
         if (b.year !== a.year) return b.year - a.year
         const aDate = a.createdAt ?? ''
@@ -67,6 +69,7 @@ export function usePublications() {
 
   return {
     publications,
+    publicPublications,
     loading,
     error,
     load,
